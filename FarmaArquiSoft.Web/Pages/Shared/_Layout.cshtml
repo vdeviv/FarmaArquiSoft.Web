@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FarmaPlus</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Farmacia_Arqui_Soft.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+
+    <div class="top-contact text-white text-center py-1" style="background-color:#5E945A;">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap">
+            <span><i class="bi bi-geo-alt-fill me-1"></i> Av. Aroma #123, Cochabamba, Bolivia</span>
+            <span><i class="bi bi-envelope-fill me-1"></i> contacto@farmaplus.com</span>
+            <span><i class="bi bi-telephone-fill me-1"></i> +591 764 32211</span>
+        </div>
+    </div>
+
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light shadow-sm sticky-top" style="background-color:#6DB076;">
+            <div class="container">
+                <a class="navbar-brand fw-bold text-white d-flex align-items-center" asp-area="" asp-page="/Index">
+                    <img src="~/images/LogoOficial.png" alt="Logo FarmaPlus" class="logo-farmaplus" />
+                    FarmaPlus
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navmenu"
+                        aria-controls="navmenu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navmenu">
+                    @using System.Security.Claims
+
+                    <ul class="navbar-nav ms-auto align-items-center gap-3">
+                        @{
+                            var currentRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "SinRol";
+                        }
+
+                        @if (currentRole == "Administrador")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-white fw-semibold" asp-page="/Users/Index">Usuarios</a>
+                            </li>
+                        }
+
+                        <li class="nav-item">
+                            <a class="nav-link text-white fw-semibold" asp-page="/Client/Index">Clientes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white fw-semibold" asp-page="/Lots/Index">Lotes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white fw-semibold" asp-page="/Provider/IndexProvider">Proveedores</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white fw-semibold" asp-page="/Reports/Index">Reportes</a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center ms-3">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "SinRol";
+
+                            <div class="dropdown">
+                                <a class="btn btn-outline-light dropdown-toggle d-flex align-items-center rounded-pill px-3" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle me-2"></i>
+                                    <span>@User.Identity!.Name</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4">
+                                    <li class="dropdown-item-text text-muted small px-3">
+                                        Rol: <strong>@role</strong>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-page="/Users/Profile">
+                                            <i class="bi bi-person-badge me-2"></i> Mi perfil
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-page="/Auth/ChangePassword">
+                                            <i class="bi bi-shield-lock me-2"></i> Cambiar contraseña
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form method="post" asp-page="/Auth/Logout" class="px-3">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger w-100 rounded-pill">
+                                                <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="btn btn-outline-light rounded-pill px-3 fw-semibold"
+                               asp-page="/Auth/Login"
+                               asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Ingresar
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+
+    <main class="main-content py-4">
+        <div class="container">
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="footer text-center text-white mt-auto py-3" style="background-color:#5E945A;">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 - FarmaPlus | Tu salud, nuestra prioridad</p>
+            <small>Diseñado con cariño en Cochabamba</small>
+        </div>
+    </footer>
+
+
+    <div class="modal fade" id="globalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4 rounded-4 shadow-lg border-0">
+                <div id="modalIcon" class="mb-3 display-4"></div>
+                <h4 id="modalTitle" class="fw-bold mb-2"></h4>
+                <p id="modalMessage" class="text-muted mb-0"></p>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        function showModal(message, type = "success") {
+            const modalTitle = document.getElementById("modalTitle");
+            const modalMessage = document.getElementById("modalMessage");
+            const modalIcon = document.getElementById("modalIcon");
+            const modal = new bootstrap.Modal(document.getElementById('globalModal'));
+
+            if (type === "success") {
+                modalTitle.textContent = "¡Operación Exitosa!";
+                modalIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success animate__animated animate__zoomIn"></i>';
+            } else if (type === "error") {
+                modalTitle.textContent = "Error en la Operación";
+                modalIcon.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger animate__animated animate__shakeX"></i>';
+            } else if (type === "warning") {
+                modalTitle.textContent = "Atención";
+                modalIcon.innerHTML = '<i class="bi bi-exclamation-circle-fill text-warning animate__animated animate__bounceIn"></i>';
+            }
+
+            modalMessage.textContent = message;
+            modal.show();
+            setTimeout(() => modal.hide(), 2500);
+        }
+    </script>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                showModal("@TempData["SuccessMessage"]", "success");
+            });
+        </script>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                showModal("@TempData["ErrorMessage"]", "error");
+            });
+        </script>
+    }
+</body>
+</html>

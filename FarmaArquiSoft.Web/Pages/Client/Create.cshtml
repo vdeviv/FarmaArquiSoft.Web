@@ -1,0 +1,51 @@
+﻿@page
+@model FarmaArquiSoft.Web.Pages.Client.Create
+@{
+    ViewData["Title"] = "Crear Cliente";
+}
+
+<h1>Crear Nuevo Cliente</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Cliente.first_name" class="control-label"></label>
+                <input asp-for="Cliente.first_name" class="form-control" />
+                <span asp-validation-for="Cliente.first_name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Cliente.last_name" class="control-label"></label>
+                <input asp-for="Cliente.last_name" class="form-control" />
+                <span asp-validation-for="Cliente.last_name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Cliente.nit" class="control-label"></label>
+                <input asp-for="Cliente.nit" class="form-control" />
+                <span asp-validation-for="Cliente.nit" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Cliente.email" class="control-label"></label>
+                <input asp-for="Cliente.email" class="form-control" />
+                <span asp-validation-for="Cliente.email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Crear" class="btn btn-success" />
+                <a asp-page="Index" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,73 @@
+﻿@page
+@model FarmaArquiSoft.Web.Pages.Client.Index
+@{
+    ViewData["Title"] = "Listado de Clientes";
+}
+
+<h1>Lista de Clientes</h1>
+
+<p>
+    <a asp-page="Create" class="btn btn-primary">Crear Nuevo Cliente</a>
+</p>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Clientes[0].first_name)</th>
+            <th>@Html.DisplayNameFor(model => model.Clientes[0].last_name)</th>
+            <th>@Html.DisplayNameFor(model => model.Clientes[0].nit)</th>
+            <th>@Html.DisplayNameFor(model => model.Clientes[0].email)</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Clientes)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.first_name)</td>
+                <td>@Html.DisplayFor(modelItem => item.last_name)</td>
+                <td>@Html.DisplayFor(modelItem => item.nit)</td>
+                <td>@Html.DisplayFor(modelItem => item.email)</td>
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@item.id" class="btn btn-sm btn-info">Editar</a> |
+                    <button type="button" class="btn btn-sm btn-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteClientModal"
+                            data-client-id="@item.id"
+                            data-client-name="@(item.first_name + " " + item.last_name)">
+                        Eliminar
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<partial name="_DeleteClientModalPartial" />
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var deleteModal = document.getElementById('deleteClientModal');
+
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+
+                    var clientId = button.getAttribute('data-client-id');
+                    var clientName = button.getAttribute('data-client-name');
+
+                    var modalIdInput = deleteModal.querySelector('#deleteClientId');
+                    var modalMessage = deleteModal.querySelector('#deleteClientMessage');
+
+                    if (modalIdInput && modalMessage) {
+                        modalIdInput.value = clientId;
+                        modalMessage.textContent = '¿Estás seguro de eliminar el cliente "' + clientName + '" (ID: ' + clientId + ')? Esta acción no se puede deshacer.';
+                    }
+                });
+            }
+        });
+    </script>
+}
