@@ -1,7 +1,5 @@
-﻿@page "{id}"
-@* 
-*@
-@model FarmaView.Pages.Users.EditModel
+﻿@page "{id:int}"
+@model FarmaArquiSoft.Web.Pages.Users.Edit
 @{
     ViewData["Title"] = "Editar Usuario";
 }
@@ -16,70 +14,70 @@
 
         <div class="card-body p-4">
             <form method="post">
-                <div asp-validation-summary="All" class="alert alert-danger"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-                <input type="hidden" asp-for="Input.Id" />
+                <input type="hidden" asp-for="Usuario.Id" />
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Usuario</label>
-                    <input class="form-control rounded-pill" value="@Model.Input.Username" disabled />
+                    <input class="form-control rounded-pill" value="@Model.DisplayUsername" disabled />
                     <small class="text-muted">El nombre de usuario no se puede editar.</small>
                 </div>
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label asp-for="Input.FirstName" class="form-label fw-semibold">Nombre(s)</label>
-                        <input asp-for="Input.FirstName" class="form-control rounded-pill" required />
-                        <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
+                        <label asp-for="Usuario.FirstName" class="form-label fw-semibold">Nombre(s)</label>
+                        <input asp-for="Usuario.FirstName" class="form-control rounded-pill" required />
+                        <span asp-validation-for="Usuario.FirstName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Input.LastFirstName" class="form-label fw-semibold">Apellido Paterno</label>
-                        <input asp-for="Input.LastFirstName" class="form-control rounded-pill" />
-                        <span asp-validation-for="Input.LastFirstName" class="text-danger small"></span>
+                        <label asp-for="Usuario.LastFirstName" class="form-label fw-semibold">Apellido Paterno</label>
+                        <input asp-for="Usuario.LastFirstName" class="form-control rounded-pill" />
+                        <span asp-validation-for="Usuario.LastFirstName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Input.LastSecondName" class="form-label fw-semibold">Apellido Materno</label>
-                        <input asp-for="Input.LastSecondName" class="form-control rounded-pill" />
-                        <span asp-validation-for="Input.LastSecondName" class="text-danger small"></span>
+                        <label asp-for="Usuario.LastSecondName" class="form-label fw-semibold">Apellido Materno</label>
+                        <input asp-for="Usuario.LastSecondName" class="form-control rounded-pill" />
+                        <span asp-validation-for="Usuario.LastSecondName" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Input.Ci" class="form-label fw-semibold">Carnet de Identidad</label>
-                        <input asp-for="Input.Ci" class="form-control rounded-pill" required />
-                        <span asp-validation-for="Input.Ci" class="text-danger small"></span>
+                        <label asp-for="Usuario.Ci" class="form-label fw-semibold">Carnet de Identidad</label>
+                        <input asp-for="Usuario.Ci" class="form-control rounded-pill" required />
+                        <span asp-validation-for="Usuario.Ci" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Input.Mail" class="form-label fw-semibold">Correo electrónico</label>
-                        <input asp-for="Input.Mail" class="form-control rounded-pill" required type="email" />
-                        <span asp-validation-for="Input.Mail" class="text-danger small"></span>
+                        <label asp-for="Usuario.Mail" class="form-label fw-semibold">Correo electrónico</label>
+                        <input asp-for="Usuario.Mail" class="form-control rounded-pill" required type="email" />
+                        <span asp-validation-for="Usuario.Mail" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Input.Phone" class="form-label fw-semibold">Número de celular</label>
-                        <input asp-for="Input.Phone" class="form-control rounded-pill" required type="tel" />
-                        <span asp-validation-for="Input.Phone" class="text-danger small"></span>
+                        <label asp-for="Usuario.Phone" class="form-label fw-semibold">Número de celular</label>
+                        <input asp-for="Usuario.Phone" class="form-control rounded-pill" required type="tel" />
+                        <span asp-validation-for="Usuario.Phone" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Input.Role" class="form-label fw-semibold">Rol</label>
-                        <select asp-for="Input.Role" class="form-select rounded-pill" asp-items="Model.Roles"></select>
-                        <span asp-validation-for="Input.Role" class="text-danger small"></span>
+                        <label asp-for="Usuario.Role" class="form-label fw-semibold">Rol</label>
+                        <select asp-for="Usuario.Role" class="form-select rounded-pill" asp-items="Model.Roles"></select>
+                        <span asp-validation-for="Usuario.Role" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="Input.Password" class="form-label fw-semibold"></label>
-                        <input asp-for="Input.Password" type="password" class="form-control rounded-pill" />
+@*                  <div class="col-md-6">
+                        <label asp-for="Usuario.Password" class="form-label fw-semibold">Nueva contraseña</label>
+                        <input asp-for="Usuario.Password" type="password" class="form-control rounded-pill" />
                         <small class="text-muted">Déjalo vacío si no deseas cambiar la contraseña.</small>
-                        <span asp-validation-for="Input.Password" class="text-danger small"></span>
-                    </div>
+                        <span asp-validation-for="Usuario.Password" class="text-danger small"></span>
+                    </div> *@
                 </div>
 
                 <div class="form-check form-switch mt-3">
-                    <input class="form-check-input" type="checkbox" role="switch" asp-for="Input.IsActive">
-                    <label class="form-check-label" asp-for="Input.IsActive"></label>
+                    <input class="form-check-input" type="checkbox" role="switch" asp-for="Usuario.IsActive">
+                    <label class="form-check-label" asp-for="Usuario.IsActive"></label>
                 </div>
 
                 <div class="text-center mt-4">
@@ -89,7 +87,6 @@
                     <a asp-page="Index" class="btn btn-outline-secondary px-4 rounded-pill ms-2">
                         <i class="bi bi-x-circle me-2"></i>Cancelar
                     </a>
-                    @*  *@
                 </div>
             </form>
         </div>

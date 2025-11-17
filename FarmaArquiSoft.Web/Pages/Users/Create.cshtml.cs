@@ -1,26 +1,26 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FarmaArquiSoft.Web.DTOs; // Define aquí tu UserCreateDTO si no existe aún
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using ServiceUser.Application.DTOS;
-using ServiceUser.Application.Services;
-using ServiceUser.Domain;
-using System.ComponentModel.DataAnnotations;
-using static System.Net.Mime.MediaTypeNames;
 
 
-namespace FarmaView.Pages.Users
+    namespace FarmaArquiSoft.Web.Pages.Users
 {
-    public class CreateModel : PageModel
+    public class Create : PageModel
     {
-        private readonly IUserService _users;
+        private readonly HttpClient _httpClient;
 
-        public CreateModel(IUserService users)
+        public Create(IHttpClientFactory factory)
         {
-            _users = users;
+            // Usa el nombre del HttpClient que tengas registrado (p.ej. "backendApi")
+            _httpClient = factory.CreateClient("backendApi");
         }
 
         [BindProperty]
-        public UserCreateVm Input { get; set; } = new();
+        public UserDTO Usuario { get; set; } = new();
 
         public SelectList Roles { get; private set; } = default!;
 
@@ -33,66 +33,86 @@ namespace FarmaView.Pages.Users
         public async Task<IActionResult> OnPostAsync()
         {
             LoadRoles();
-            if (!ModelState.IsValid) return Page();
+
+            if (!ModelState.IsValid)
+                return Page();
 
             try
             {
-                var dto = new UserCreateDto(
-                    FirstName: Input.FirstName,
-                    LastFirstName: Input.LastFirstName,
-                    LastSecondName: Input.LastSecondName,
-                    Mail: Input.Mail,
-                    Phone: Input.Phone,
-                    Ci: Input.Ci,
-                    Role: Input.Role
-                );
+                // Ajusta la ruta al endpoint real de tu API:
+                var response = await _httpClient.PostAsJsonAsync("/api/Users", Usuario);
 
-                const int actorId = 1;
-                await _users.RegisterAsync(dto, actorId);
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Usuario creado correctamente. Se envió una contraseña temporal al correo.";
+                    return RedirectToPage("Index");
+                }
 
-                TempData["SuccessMessage"] = "Usuario creado correctamente. Se envi? una contrase?a temporal al correo.";
-                return RedirectToPage("Index");
-            }
-            catch (ServiceUser.Application.Services.ValidationException vex)
-            {
-                foreach (var kv in vex.Errors)
-                    ModelState.AddModelError(kv.Key ?? string.Empty, kv.Value);
+                if (response.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    var jsonContent = await response.Content.ReadAsStringAsync();
+                    TryMapValidation(jsonContent, nameof(Usuario));
+                    return Page();
+                }
+
+                ModelState.AddModelError(string.Empty, $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
                 return Page();
             }
-            catch (DomainException ex)
+            catch (HttpRequestException ex)
             {
-                ModelState.AddModelError(string.Empty, ex.Message);
+                ModelState.AddModelError(string.Empty, $"Error de conexión con el API: {ex.Message}. Verifica que el servicio de Usuarios esté en ejecución y la BaseAddress sea correcta.");
+                return Page();
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Ocurrió un error inesperado: {ex.Message}");
                 return Page();
             }
         }
 
         private void LoadRoles()
         {
+            // Si prefieres cargarlos desde API, reemplaza por un GET al endpoint de roles.
             Roles = new SelectList(Enum.GetValues(typeof(UserRole)));
         }
 
-        public class UserCreateVm
+        private void TryMapValidation(string jsonContent, string prefix)
         {
-            [Required, Display(Name = "Nombre")]
-            public string FirstName { get; set; } = "";
+            // Mapea respuestas de validación con formato:
+            // { "error": "mensaje" } o { "errors": { "Campo": ["msg1","msg2"] } }
+            try
+            {
+                using var doc = JsonDocument.Parse(jsonContent);
+                var root = doc.RootElement;
 
-            [Required, Display(Name = "Primer Apellido")]
-            public string LastFirstName { get; set; } = "";
+                if (root.TryGetProperty("error", out var generalError) && generalError.ValueKind == JsonValueKind.String)
+                {
+                    ModelState.AddModelError(string.Empty, generalError.GetString() ?? "Error de dominio no especificado.");
+                }
 
-            [Required, Display(Name = "Segundo Apellido")]
-            public string LastSecondName { get; set; } = "";
+                if (root.TryGetProperty("errors", out var errorsElement) && errorsElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var kvp in errorsElement.EnumerateObject())
+                    {
+                        string apiFieldName = kvp.Name;
+                        string modelStateKey = string.IsNullOrWhiteSpace(prefix) ? apiFieldName : $"{prefix}.{apiFieldName}";
 
-            [Required, EmailAddress, Display(Name = "Correo")]
-            public string Mail { get; set; } = "";
-
-            [Required, Range(100000, 9999999999), Display(Name = "Teléfono")]
-            public string Phone { get; set; }
-
-            [Required, Display(Name = "CI")]
-            public string Ci { get; set; } = "";
-
-            [Required, Display(Name = "Rol")]
-            public UserRole Role { get; set; } = UserRole.Cajero;
+                        if (kvp.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var err in kvp.Value.EnumerateArray())
+                                ModelState.AddModelError(modelStateKey, err.GetString() ?? err.ToString() ?? "Error de campo.");
+                        }
+                        else if (kvp.Value.ValueKind == JsonValueKind.String)
+                        {
+                            ModelState.AddModelError(modelStateKey, kvp.Value.GetString() ?? "Error de campo.");
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Si la respuesta no es JSON válido, no interrumpe el flujo; quedará el mensaje genérico.
+            }
         }
     }
 }

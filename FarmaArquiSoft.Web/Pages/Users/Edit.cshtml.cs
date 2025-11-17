@@ -1,155 +1,162 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FarmaArquiSoft.Web.DTOs; // Define aquí UserUpdateDTO y UserDTO (GET) si aún no existen
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using ServiceCommon.Domain.Ports;
-using ServiceUser.Application.DTOS;
-using ServiceUser.Application.Services;
-using ServiceUser.Domain;
-using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography;
-using static System.Net.Mime.MediaTypeNames;
 
-namespace FarmaView.Pages.Users
+
+namespace FarmaArquiSoft.Web.Pages.Users
 {
-    public class EditModel : PageModel
+    public class Edit : PageModel
     {
-        private readonly IUserService _users;
-        private readonly IEncryptionService _encryptionService;
+        private readonly HttpClient _http;
 
-        public EditModel(IUserService users, IEncryptionService encryptionService)
+        public Edit(IHttpClientFactory factory)
         {
-            _users = users;
-            _encryptionService = encryptionService;
+            // Usa el cliente que registraste (p.ej. "backendApi")
+            _http = factory.CreateClient("backendApi");
         }
 
         [BindProperty]
-        public UserEditVm Input { get; set; } = new();
+        public UserDTO Usuario { get; set; } = new();
+
+        public string DisplayUsername { get; set; } = string.Empty;
 
         public SelectList Roles { get; private set; } = default!;
 
-        public async Task<IActionResult> OnGetAsync(string id)
+        public async Task<IActionResult> OnGetAsync(int id)
         {
             LoadRoles();
 
-            int userId;
-
             try
             {
+                var res = await _http.GetAsync($"/api/Users/{id}");
+                if (res.StatusCode == HttpStatusCode.NotFound)
+                {
+                    TempData["ErrorMessage"] = $"Usuario con ID {id} no encontrado.";
+                    return RedirectToPage("Index");
+                }
+                if (!res.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = $"Error al cargar usuario. Código: {(int)res.StatusCode}, Detalle: {res.ReasonPhrase}";
+                    return RedirectToPage("Index");
+                }
 
-                userId = _encryptionService.DecryptId(id);
+                // Supón que el API devuelve un UserDTO con todas las propiedades para edición y lectura
+                var dto = await res.Content.ReadFromJsonAsync<UserDTO>();
+                if (dto == null)
+                {
+                    TempData["ErrorMessage"] = "La respuesta del API no contenía datos.";
+                    return RedirectToPage("Index");
+                }
+
+                // Mapear DTO de lectura a DTO de edición
+                Usuario = new UserDTO
+                {
+                    Id = dto.Id,
+                    FirstName = dto.FirstName,
+                    LastFirstName = dto.LastFirstName,
+                    LastSecondName = dto.LastSecondName,
+                    Mail = dto.Mail,
+                    Phone = dto.Phone,
+                    Ci = dto.Ci,
+                    Role = dto.Role,
+                    // Password queda vacío para no sobreescribir si no se cambia
+                    IsActive = dto.IsActive
+                };
+
+                DisplayUsername = dto.Username ?? string.Empty;
+                return Page();
             }
-            catch (FormatException)
+            catch (HttpRequestException ex)
             {
-
-                TempData["ErrorMessage"] = "El enlace de edición es inválido o ha sido modificado.";
+                TempData["ErrorMessage"] = $"Error de conexión al cargar usuario: {ex.Message}";
                 return RedirectToPage("Index");
             }
-            catch (CryptographicException)
+            catch (Exception ex)
             {
-
-                TempData["ErrorMessage"] = "Error de seguridad. El ID no pudo ser desencriptado.";
+                TempData["ErrorMessage"] = $"Ocurrió un error inesperado: {ex.Message}";
                 return RedirectToPage("Index");
             }
-
-            var u = await _users.GetByIdAsync(userId);
-            if (u is null) return RedirectToPage("Index");
-
-            Input = new UserEditVm
-            {
-                Id = u.id,
-                Username = u.username,
-                FirstName = u.first_name,
-                LastFirstName = u.last_first_name,
-                LastSecondName = u.last_second_name,
-                Mail = u.mail ?? "",
-                Phone = u.phone,
-                Ci = u.ci,
-                Role = u.role,
-                IsActive = !u.is_deleted
-            };
-
-            return Page();
         }
 
-
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostAsync()
         {
-
-            const int ACTOR_ID = 1;
+            LoadRoles();
 
             if (!ModelState.IsValid)
-            {
-                LoadRoles();
                 return Page();
-            }
 
             try
             {
+                var response = await _http.PutAsJsonAsync($"/api/Users/{Usuario.Id}", Usuario);
 
-                var dto = new UserUpdateDto(
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = $"Usuario actualizado correctamente.";
+                    return RedirectToPage("Index");
+                }
 
-                    Input.FirstName,
-                    Input.LastFirstName,
-                    Input.LastSecondName,
-                    Input.Mail,
-                    Input.Phone,
-                    Input.Ci,
-                    Input.Role
-                );
+                if (response.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    var jsonContent = await response.Content.ReadAsStringAsync();
+                    TryMapValidation(jsonContent, nameof(Usuario));
+                    return Page();
+                }
 
-                await _users.UpdateAsync(Input.Id, dto, ACTOR_ID);
-
-                TempData["SuccessMessage"] = $"Usuario '{Input.Username}' actualizado correctamente.";
-                return RedirectToPage("Index");
-            }
-
-            catch (ServiceUser.Application.Services.ValidationException vex)
-            {
-                foreach (var kv in vex.Errors)
-                    ModelState.AddModelError(kv.Key ?? string.Empty, kv.Value);
+                ModelState.AddModelError(string.Empty, $"Error al actualizar. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
                 return Page();
             }
-
-            catch (DomainException ex)
+            catch (HttpRequestException ex)
             {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                LoadRoles();
+                ModelState.AddModelError(string.Empty, $"Error de conexión con el API: {ex.Message}. Verifica que el servicio de Usuarios esté en ejecución.");
+                return Page();
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Ocurrió un error inesperado: {ex.Message}");
                 return Page();
             }
         }
-
 
         private void LoadRoles()
         {
+            // Si prefieres, podrías consultarlos al API.
             Roles = new SelectList(Enum.GetValues(typeof(UserRole)));
         }
 
-        public class UserEditVm
+        private void TryMapValidation(string jsonContent, string prefix)
         {
-            [HiddenInput] public int Id { get; set; }
+            // Mapea { "error": "msg" } y { "errors": { "Field": ["msg1"] } }
+            try
+            {
+                using var doc = JsonDocument.Parse(jsonContent);
+                var root = doc.RootElement;
 
-            [Display(Name = "Usuario")] public string Username { get; set; } = "";
+                if (root.TryGetProperty("error", out var generalError) && generalError.ValueKind == JsonValueKind.String)
+                    ModelState.AddModelError(string.Empty, generalError.GetString() ?? "Error de dominio no especificado.");
 
-            [Required, Display(Name = "Nombre")] public string FirstName { get; set; } = "";
-
-            [Required, Display(Name = "Primer Apellido")]
-            public string LastFirstName { get; set; } = "";
-
-            [Required, Display(Name = "Segundo Apellido")]
-            public string LastSecondName { get; set; } = "";
-
-            [Required, EmailAddress, Display(Name = "Correo")] public string Mail { get; set; } = "";
-
-            [Required, Range(100000, 9999999999), Display(Name = "Teléfono")]
-            public string Phone { get; set; }
-
-            [Required, Display(Name = "CI")] public string Ci { get; set; } = "";
-
-            [Required, Display(Name = "Rol")] public UserRole Role { get; set; } = UserRole.Cajero;
-
-            [MinLength(4), DataType(DataType.Password), Display(Name = "Nueva contraseña")]
-            public string? Password { get; set; }
-            public bool IsActive { get; internal set; }
+                if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var kv in errors.EnumerateObject())
+                    {
+                        var key = string.IsNullOrWhiteSpace(prefix) ? kv.Name : $"{prefix}.{kv.Name}";
+                        if (kv.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var e in kv.Value.EnumerateArray())
+                                ModelState.AddModelError(key, e.GetString() ?? e.ToString() ?? "Error de campo.");
+                        }
+                        else if (kv.Value.ValueKind == JsonValueKind.String)
+                        {
+                            ModelState.AddModelError(key, kv.Value.GetString() ?? "Error de campo.");
+                        }
+                    }
+                }
+            }
+            catch { /* si no es JSON válido, ignoramos y queda el mensaje genérico */ }
         }
     }
 }

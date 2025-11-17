@@ -1,5 +1,5 @@
 ﻿@page
-@model FarmaView.Pages.Users.IndexModel
+@model FarmaArquiSoft.Web.Pages.Users.Index
 @{
     ViewData["Title"] = "Gestión de Usuarios";
 }
@@ -53,7 +53,7 @@
                         <tr>
                             <td class="fw-semibold">@u.username</td>
                             <td>@u.first_name</td>
-                            <td>@u.last_first_name @u.last_second_name </td>
+                            <td>@u.last_first_name @u.last_second_name</td>
                             <td style="white-space: normal; word-break: break-word; max-width: 220px;">
                                 @u.mail
                             </td>
@@ -67,7 +67,7 @@
                             <td>
                                 <div class="d-flex justify-content-center gap-2">
                                     <a asp-page="Edit"
-                                       asp-route-id="@Model.EncryptedIds[u.id]"
+                                       asp-route-id="@u.id"
                                        class="btn btn-sm btn-outline-warning px-3 rounded-pill"
                                        title="Editar">
                                         <i class="bi bi-pencil"></i>
