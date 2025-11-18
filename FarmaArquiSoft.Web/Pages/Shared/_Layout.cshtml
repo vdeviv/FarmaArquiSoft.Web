@@ -43,9 +43,11 @@
                     <ul class="navbar-nav ms-auto align-items-center gap-3">
                         @{
                             var currentRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "SinRol";
+                            <span>@currentRole</span>
+
                         }
 
-                        @if (currentRole == "Administrador")
+                        @if (1==1)
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-white fw-semibold" asp-page="/Users/Index">Usuarios</a>

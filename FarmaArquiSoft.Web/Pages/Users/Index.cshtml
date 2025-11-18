@@ -36,8 +36,8 @@
             <thead class="table-success text-dark">
                 <tr>
                     <th>Usuario</th>
-                    <th>Nombre(s)</th>
-                    <th>Apellido(s)</th>
+@*                     <th>Nombre(s)</th>
+ *@                 <th>Apellido(s)</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
                     <th>CI</th>
@@ -51,23 +51,23 @@
                     foreach (var u in Model.Users)
                     {
                         <tr>
-                            <td class="fw-semibold">@u.username</td>
-                            <td>@u.first_name</td>
-                            <td>@u.last_first_name @u.last_second_name</td>
+                            <td class="fw-semibold">@u.Username</td>
+@*                             <td>@u.FirstName</td>
+ *@                            <td>@u.LastFirstName @u.LastSecondName</td>
                             <td style="white-space: normal; word-break: break-word; max-width: 220px;">
-                                @u.mail
+                                @u.Mail
                             </td>
-                            <td>@u.phone</td>
-                            <td>@u.ci</td>
+                            <td>@u.Phone</td>
+                            <td>@u.Ci</td>
                             <td>
                                 <span class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
-                                    @u.role
+                                    @u.Role
                                 </span>
                             </td>
                             <td>
                                 <div class="d-flex justify-content-center gap-2">
                                     <a asp-page="Edit"
-                                       asp-route-id="@u.id"
+                                       asp-route-id="@u.Id"
                                        class="btn btn-sm btn-outline-warning px-3 rounded-pill"
                                        title="Editar">
                                         <i class="bi bi-pencil"></i>
@@ -75,7 +75,7 @@
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger px-3 rounded-pill"
                                             title="Eliminar"
-                                            onclick="openDeleteUserModal(@u.id, '@u.username')">
+                                            onclick="openDeleteUserModal(@u.Id, '@u.Username')">
                                         <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>
