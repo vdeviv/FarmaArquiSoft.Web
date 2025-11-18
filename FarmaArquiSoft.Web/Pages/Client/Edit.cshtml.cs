@@ -17,7 +17,7 @@ namespace FarmaArquiSoft.Web.Pages.Client
 
         public Edit(IHttpClientFactory factory)
         {
-            _httpClient = factory.CreateClient("clienteApi");
+            _httpClient = factory.CreateClient("clientsApi");
         }
 
         public async Task<IActionResult> OnGetAsync(int id)

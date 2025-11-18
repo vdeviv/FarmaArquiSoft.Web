@@ -1,13 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FarmaArquiSoft.Web.DTOs; // Define aquí tu UserCreateDTO si no existe aún
+using FarmaArquiSoft.Web.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-
-    namespace FarmaArquiSoft.Web.Pages.Users
+namespace FarmaArquiSoft.Web.Pages.Users
 {
     public class Create : PageModel
     {
@@ -15,8 +14,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
         public Create(IHttpClientFactory factory)
         {
-            // Usa el nombre del HttpClient que tengas registrado (p.ej. "backendApi")
-            _httpClient = factory.CreateClient("backendApi");
+            _httpClient = factory.CreateClient("usersApi");
         }
 
         [BindProperty]
@@ -39,8 +37,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
             try
             {
-                // Ajusta la ruta al endpoint real de tu API:
-                var response = await _httpClient.PostAsJsonAsync("/api/Users", Usuario);
+                var response = await _httpClient.PostAsJsonAsync("/api/user", Usuario);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -55,12 +52,14 @@ using Microsoft.AspNetCore.Mvc.Rendering;
                     return Page();
                 }
 
-                ModelState.AddModelError(string.Empty, $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
+                ModelState.AddModelError(string.Empty,
+                    $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
                 return Page();
             }
             catch (HttpRequestException ex)
             {
-                ModelState.AddModelError(string.Empty, $"Error de conexión con el API: {ex.Message}. Verifica que el servicio de Usuarios esté en ejecución y la BaseAddress sea correcta.");
+                ModelState.AddModelError(string.Empty,
+                    $"Error de conexión con el API: {ex.Message}. Verifica que el servicio de Usuarios esté en ejecución y la BaseAddress sea correcta.");
                 return Page();
             }
             catch (Exception ex)
@@ -72,46 +71,102 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
         private void LoadRoles()
         {
-            // Si prefieres cargarlos desde API, reemplaza por un GET al endpoint de roles.
             Roles = new SelectList(Enum.GetValues(typeof(UserRole)));
         }
 
         private void TryMapValidation(string jsonContent, string prefix)
         {
-            // Mapea respuestas de validación con formato:
-            // { "error": "mensaje" } o { "errors": { "Campo": ["msg1","msg2"] } }
             try
             {
                 using var doc = JsonDocument.Parse(jsonContent);
                 var root = doc.RootElement;
 
-                if (root.TryGetProperty("error", out var generalError) && generalError.ValueKind == JsonValueKind.String)
+                // 1) DomainException -> { "message": "..." }
+                if (root.TryGetProperty("message", out var msgElement) &&
+                    msgElement.ValueKind == JsonValueKind.String)
                 {
-                    ModelState.AddModelError(string.Empty, generalError.GetString() ?? "Error de dominio no especificado.");
+                    var msg = msgElement.GetString() ?? string.Empty;
+
+                    // Ignoramos el mensaje genérico de ValidationException
+                    if (!string.IsNullOrWhiteSpace(msg) &&
+                        !msg.Contains("Validación de dominio falló", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string modelStateKey;
+
+                        if (msg.Contains("correo", StringComparison.OrdinalIgnoreCase) ||
+                            msg.Contains("mail", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Mensajes de correo -> Mail
+                            modelStateKey = string.IsNullOrWhiteSpace(prefix)
+                                ? "Mail"
+                                : $"{prefix}.Mail";
+                        }
+                        else if (msg.Contains("ci", StringComparison.OrdinalIgnoreCase) ||
+                                 msg.Contains("carnet", StringComparison.OrdinalIgnoreCase) ||
+                                 msg.Contains("identidad", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Mensajes de CI -> Ci
+                            modelStateKey = string.IsNullOrWhiteSpace(prefix)
+                                ? "Ci"
+                                : $"{prefix}.Ci";
+                        }
+                        else
+                        {
+                            // Otros DomainException -> error general arriba
+                            modelStateKey = string.Empty;
+                        }
+
+                        ModelState.AddModelError(modelStateKey, msg);
+                    }
                 }
 
-                if (root.TryGetProperty("errors", out var errorsElement) && errorsElement.ValueKind == JsonValueKind.Object)
+                // 2) ValidationException -> { "errors": { "first_name": "...", ... } }
+                if (root.TryGetProperty("errors", out var errorsElement) &&
+                    errorsElement.ValueKind == JsonValueKind.Object)
                 {
+                    var fieldMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["first_name"] = "FirstName",
+                        ["last_first_name"] = "LastFirstName",
+                        ["last_second_name"] = "LastSecondName",
+                        ["mail"] = "Mail",
+                        ["ci"] = "Ci",
+                        ["phone"] = "Phone"
+                    };
+
                     foreach (var kvp in errorsElement.EnumerateObject())
                     {
-                        string apiFieldName = kvp.Name;
-                        string modelStateKey = string.IsNullOrWhiteSpace(prefix) ? apiFieldName : $"{prefix}.{apiFieldName}";
+                        var apiFieldName = kvp.Name;
+                        var value = kvp.Value;
 
-                        if (kvp.Value.ValueKind == JsonValueKind.Array)
+                        if (!fieldMap.TryGetValue(apiFieldName, out var dtoPropName))
+                            dtoPropName = apiFieldName;
+
+                        var modelStateKey = string.IsNullOrWhiteSpace(prefix)
+                            ? dtoPropName
+                            : $"{prefix}.{dtoPropName}";
+
+                        if (value.ValueKind == JsonValueKind.Array)
                         {
-                            foreach (var err in kvp.Value.EnumerateArray())
-                                ModelState.AddModelError(modelStateKey, err.GetString() ?? err.ToString() ?? "Error de campo.");
+                            foreach (var err in value.EnumerateArray())
+                            {
+                                ModelState.AddModelError(
+                                    modelStateKey,
+                                    err.GetString() ?? err.ToString() ?? "Error de campo.");
+                            }
                         }
-                        else if (kvp.Value.ValueKind == JsonValueKind.String)
+                        else if (value.ValueKind == JsonValueKind.String)
                         {
-                            ModelState.AddModelError(modelStateKey, kvp.Value.GetString() ?? "Error de campo.");
+                            ModelState.AddModelError(
+                                modelStateKey,
+                                value.GetString() ?? "Error de campo.");
                         }
                     }
                 }
             }
             catch
             {
-                // Si la respuesta no es JSON válido, no interrumpe el flujo; quedará el mensaje genérico.
+                // Si algo falla al parsear, no rompemos la página
             }
         }
     }
