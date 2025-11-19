@@ -3,113 +3,74 @@ using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net;
-using System.Net.Http.Json;
-using System.Linq;
-
 
 namespace FarmaArquiSoft.Web.Pages.Client
 {
     public class Edit : PageModel
     {
-        private readonly HttpClient _httpClient;
+        private readonly ClientApi _clientApi;
 
         [BindProperty]
-        public ClientDTO Cliente { get; set; } = new ClientDTO();
+        public ClientDTO Cliente { get; set; } = new();
 
-        public Edit(IHttpClientFactory factory)
+        public Edit(ClientApi clientApi)
         {
-            _httpClient = factory.CreateClient("clientsApi");
+            _clientApi = clientApi;
         }
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            try
-            {
-                var result = await _httpClient.GetFromJsonAsync<ClientDTO>($"/api/Clients/{id}");
+            var dto = await _clientApi.GetByIdAsync(id);
 
-                if (result == null)
-                {
-                    TempData["ErrorMessage"] = $"Cliente con ID {id} no encontrado.";
-                    return RedirectToPage("./Index");
-                }
-
-                Cliente = result;
-                return Page();
-            }
-            catch (HttpRequestException ex)
+            if (dto == null)
             {
-                TempData["ErrorMessage"] =
-                    $"Error de conexión al cargar cliente: {ex.Message}";
+                TempData["ErrorMessage"] = $"Cliente con ID {id} no encontrado.";
                 return RedirectToPage("./Index");
             }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] =
-                    $"Ocurrió un error inesperado al cargar el cliente: {ex.Message}";
-                return RedirectToPage("./Index");
-            }
+
+            Cliente = dto;
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
-            {
                 return Page();
+
+            var res = await _clientApi.UpdateAsync(Cliente);
+
+            if (res.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "Cliente actualizado correctamente.";
+                return RedirectToPage("./Index");
             }
 
-            try
+            if (res.StatusCode == HttpStatusCode.BadRequest)
             {
-                var response = await _httpClient.PutAsJsonAsync($"/api/Clients/{Cliente.id}", Cliente);
+                var json = await res.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    TempData["SuccessMessage"] =
-                        $"Cliente '{Cliente.first_name} {Cliente.last_name}' actualizado correctamente.";
-                    return RedirectToPage("./Index");
-                }
-
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    var jsonContent = await response.Content.ReadAsStringAsync();
-
-                    var fieldMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                ApiValidationFacade.MapValidationErrors(
+                    ModelState,
+                    json,
+                    nameof(Cliente),
+                    new Dictionary<string, string>
                     {
                         ["first_name"] = "first_name",
                         ["last_name"] = "last_name",
                         ["nit"] = "nit",
                         ["email"] = "email"
-                    };
+                    },
+                    mailPropertyName: "email",
+                    idPropertyName: "nit",
+                    mailKeywords: new[] { "correo", "email", "mail" },
+                    idKeywords: new[] { "nit", "ci" }
+                );
 
-                    ApiValidationFacade.MapValidationErrors(
-                        modelState: ModelState,
-                        jsonContent: jsonContent,
-                        prefix: nameof(Cliente),
-                        fieldMap: fieldMap,
-                        mailPropertyName: "email",
-                        idPropertyName: "nit",
-                        mailKeywords: new[] { "correo", "email", "mail" },
-                        idKeywords: new[] { "nit", "c.i", "ci" }
-                    );
-
-                    return Page();
-                }
-
-                TempData["ErrorMessage"] =
-                    $"Error al actualizar el cliente. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}";
-                return RedirectToPage("./Index");
-            }
-            catch (HttpRequestException ex)
-            {
-                ModelState.AddModelError(string.Empty,
-                    $"Error de conexión con el API al intentar actualizar: {ex.Message}. Por favor, verifique que Clients.Api esté en ejecución.");
                 return Page();
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty,
-                    $"Ocurrió un error inesperado: {ex.Message}");
-                return Page();
-            }
+
+            ModelState.AddModelError(string.Empty, $"Error inesperado {res.StatusCode}");
+            return Page();
         }
     }
 }

@@ -3,21 +3,19 @@ using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net;
-using System.Net.Http.Json;
-using System.Linq;
 
 namespace FarmaArquiSoft.Web.Pages.Client
 {
     public class Create : PageModel
     {
-        private readonly HttpClient _httpClient;
+        private readonly ClientApi _clientApi;
 
         [BindProperty]
-        public ClientDTO Cliente { get; set; } = new ClientDTO();
+        public ClientDTO Cliente { get; set; } = new();
 
-        public Create(IHttpClientFactory factory)
+        public Create(ClientApi clientApi)
         {
-            _httpClient = factory.CreateClient("clientsApi");
+            _clientApi = clientApi;
         }
 
         public void OnGet() { }
@@ -25,69 +23,42 @@ namespace FarmaArquiSoft.Web.Pages.Client
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
-            {
                 return Page();
+
+            var response = await _clientApi.CreateAsync(Cliente);
+
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "Cliente creado exitosamente.";
+                return RedirectToPage("./Index");
             }
 
-            try
+            if (response.StatusCode == HttpStatusCode.BadRequest)
             {
-                var response = await _httpClient.PostAsJsonAsync("/api/Clients", Cliente);
+                var json = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    TempData["SuccessMessage"] = "Cliente creado exitosamente.";
-                    return RedirectToPage("./Index");
-                }
-
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    var jsonContent = await response.Content.ReadAsStringAsync();
-
-                    // Configuración específica para CLIENTES
-                    var fieldMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                ApiValidationFacade.MapValidationErrors(
+                    ModelState,
+                    json,
+                    nameof(Cliente),
+                    new Dictionary<string, string>
                     {
                         ["first_name"] = "first_name",
-                        ["last_name"]  = "last_name",
-                        ["nit"]        = "nit",
-                        ["email"]      = "email"
-                    };
+                        ["last_name"] = "last_name",
+                        ["nit"] = "nit",
+                        ["email"] = "email"
+                    },
+                    mailPropertyName: "email",
+                    idPropertyName: "nit",
+                    mailKeywords: new[] { "correo", "email", "mail" },
+                    idKeywords: new[] { "nit", "ci" }
+                );
 
-                    ApiValidationFacade.MapValidationErrors(
-                        modelState: ModelState,
-                        jsonContent: jsonContent,
-                        prefix: nameof(Cliente),
-                        fieldMap: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                        {
-                            ["first_name"] = "first_name",
-                            ["last_name"] = "last_name",
-                            ["nit"] = "nit",
-                            ["email"] = "email"
-                        },
-                        mailPropertyName: "email",
-                        idPropertyName: "nit",
-                        mailKeywords: new[] { "correo", "email", "mail" },
-                        idKeywords: new[] { "nit", "c.i", "ci" }
-                    );
-
-                    return Page();
-                }
-
-                ModelState.AddModelError(string.Empty,
-                    $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
                 return Page();
             }
-            catch (HttpRequestException ex)
-            {
-                ModelState.AddModelError(string.Empty,
-                    $"Error de conexión con el API: {ex.Message}. Por favor, verifique que Clients.Api esté en ejecución.");
-                return Page();
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty,
-                    $"Ocurrió un error inesperado al procesar la solicitud: {ex.Message}");
-                return Page();
-            }
+
+            ModelState.AddModelError(string.Empty, $"Error inesperado {response.StatusCode}");
+            return Page();
         }
     }
 }

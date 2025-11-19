@@ -1,36 +1,32 @@
 ﻿using FarmaArquiSoft.Web.DTOs;
+using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net;
-using System.Text.Json;
 
 namespace FarmaArquiSoft.Web.Pages.Client
 {
     public class Index : PageModel
     {
-        private readonly HttpClient _httpClient;
+        private readonly ClientApi _clientApi;
 
-        public List<ClientDTO> Clientes { get; set; } = new List<ClientDTO>();
+        public List<ClientDTO> Clientes { get; set; } = new();
 
-        public Index(IHttpClientFactory factory)
+        public Index(ClientApi clientApi)
         {
-            _httpClient = factory.CreateClient("clientsApi");
+            _clientApi = clientApi;
         }
 
         public async Task OnGet()
         {
             try
             {
-                var result = await _httpClient.GetFromJsonAsync<List<ClientDTO>>("/api/Clients");
-                Clientes = result ?? new List<ClientDTO>();
-
+                Clientes = await _clientApi.GetAllAsync();
                 Clientes = Clientes.OrderBy(c => c.first_name).ToList();
-
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
-                ModelState.AddModelError(string.Empty, $"Error al cargar clientes: {ex.Message}. Asegúrate que Clients.Api esté corriendo en el puerto 5142.");
-                Clientes = new List<ClientDTO>();
+                ModelState.AddModelError(string.Empty, $"Error al cargar clientes: {ex.Message}");
             }
         }
 
@@ -38,40 +34,28 @@ namespace FarmaArquiSoft.Web.Pages.Client
         {
             try
             {
-                var response = await _httpClient.DeleteAsync($"/api/Clients/{id}");
+                var res = await _clientApi.DeleteAsync(id);
 
-                if (response.IsSuccessStatusCode)
+                if (res.IsSuccessStatusCode)
                 {
-                    TempData["SuccessMessage"] = $"Cliente con ID {id} eliminado (soft delete) correctamente.";
+                    TempData["SuccessMessage"] = $"Cliente eliminado correctamente.";
                 }
-                else if (response.StatusCode == HttpStatusCode.NotFound)
+                else if (res.StatusCode == HttpStatusCode.NotFound)
                 {
-                    TempData["ErrorMessage"] = $"Cliente con ID {id} no encontrado.";
+                    TempData["ErrorMessage"] = $"Cliente con ID {id} no existe.";
                 }
                 else
                 {
-                    string errorDetail = response.ReasonPhrase;
-                    try
-                    {
-                        var errorContent = await response.Content.ReadAsStringAsync();
-                       
-                        if (!string.IsNullOrEmpty(errorContent))
-                        {
-                            errorDetail = errorContent;
-                        }
-                    }
-                    catch (Exception) { }
-
-                    TempData["ErrorMessage"] = $"Error al eliminar el cliente. Código: {(int)response.StatusCode}. Detalle: {errorDetail}";
+                    TempData["ErrorMessage"] =
+                        $"Error al eliminar. Código {(int)res.StatusCode}, Detalle: {res.ReasonPhrase}";
                 }
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
-                TempData["ErrorMessage"] = $"Error de conexión con el API al intentar eliminar: {ex.Message}";
+                TempData["ErrorMessage"] = $"Error de conexión con el API: {ex.Message}";
             }
 
             return RedirectToPage();
         }
-
     }
 }

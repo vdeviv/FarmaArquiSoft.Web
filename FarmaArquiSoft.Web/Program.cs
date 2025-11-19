@@ -21,8 +21,9 @@ builder.Services.AddHttpClient("clientsApi", c =>
     c.BaseAddress = new Uri("http://localhost:5142");
 });
 
-// 👇 Registramos la fachada UserApi para DI
+// Fachadas
 builder.Services.AddScoped<UserApi>();
+builder.Services.AddScoped<ClientApi>();
 
 //Microservicio de LOTES
 builder.Services.AddHttpClient("lotesApi", c =>
