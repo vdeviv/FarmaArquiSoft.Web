@@ -12,37 +12,39 @@ namespace FarmaArquiSoft.Web.Services
             _http = factory.CreateClient("lotesApi");
         }
 
-        // GET ALL
-        public async Task<List<LotDTO>> GetAll()
+        public async Task<List<LotDTO>> GetAllAsync()
         {
             return await _http.GetFromJsonAsync<List<LotDTO>>("api/lots");
         }
 
-        // GET BY ID
-        public async Task<LotDTO?> GetById(int id)
+
+        public async Task<LotDTO?> GetByIdAsync(int id)
         {
             return await _http.GetFromJsonAsync<LotDTO>($"api/lots/{id}");
         }
 
-        // CREATE
-        public async Task<bool> Create(LotDTO lot)
+        // Crear un nuevo lote
+        public async Task CreateAsync(LotDTO lot)
         {
             var response = await _http.PostAsJsonAsync("api/lots", lot);
-            return response.IsSuccessStatusCode;
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("No se pudo crear el lote.");
         }
 
-        // UPDATE
-        public async Task<bool> Update(int id, LotDTO lot)
+        public async Task UpdateAsync(int id, LotDTO lot)
         {
             var response = await _http.PutAsJsonAsync($"api/lots/{id}", lot);
-            return response.IsSuccessStatusCode;
-        }
 
-        // DELETE
-        public async Task<bool> Delete(int id)
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("No se pudo actualizar el lote.");
+        }
+        public async Task DeleteAsync(int id)
         {
             var response = await _http.DeleteAsync($"api/lots/{id}");
-            return response.IsSuccessStatusCode;
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("No se pudo eliminar el lote.");
         }
     }
 }
