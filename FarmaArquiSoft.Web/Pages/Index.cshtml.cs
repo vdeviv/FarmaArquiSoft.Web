@@ -5,12 +5,16 @@ namespace FarmaArquiSoft.Web.Pages
 {
     public class IndexModel : PageModel
     {
-        public IActionResult OnGet()
-        {
-            if (!User.Identity!.IsAuthenticated)
-                return RedirectToPage("/Auth/Login");
+        private readonly ILogger<IndexModel> _logger;
 
-            return Page();
+        public IndexModel(ILogger<IndexModel> logger)
+        {
+            _logger = logger;
+        }
+
+        public void OnGet()
+        {
+
         }
     }
 }

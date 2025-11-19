@@ -1,50 +1,10 @@
 ﻿@page
-@model FarmaArquiSoft.Web.Pages.IndexModel
-@using System.Security.Claims
+@model IndexModel
 @{
-    ViewData["Title"] = "Inicio - FarmaPlus";
-
-    var isAuthenticated = User?.Identity?.IsAuthenticated == true;
-    var role = User?.FindFirst(ClaimTypes.Role)?.Value ?? "Invitado";
+    ViewData["Title"] = "Home page";
 }
 
-@if (!isAuthenticated)
-{
-    <script>
-        window.location.href = '/Auth/Login';
-    </script>
-}
-else
-{
-    <section class="home-section text-center py-5">
-        <div class="container">
-            <img src="~/images/LogoOficial.png" alt="Logo FarmaPlus" class="logo-home mb-4" />
-
-            <h1 class="display-5 fw-bold text-primary">Sistema de Gestión de Farmacia</h1>
-            <p class="lead mb-4 text-muted">
-                Administra clientes, usuarios, proveedores y control de lotes de medicamentos con facilidad y seguridad.
-            </p>
-
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
-
-                @if (role == "Administrador")
-                {
-                    <a asp-page="/Clients/Index" class="btn btn-custom">Clientes</a>
-                    <a asp-page="/Providers/Index" class="btn btn-custom">Proveedores</a>
-                    <a asp-page="/Lots/Index" class="btn btn-custom">Lotes</a>
-                    <a asp-page="/Users/Index" class="btn btn-custom">Usuarios</a>
-                }
-                else if (role == "Cajero")
-                {
-                    <a asp-page="/Clients/Index" class="btn btn-custom">Clientes</a>
-                    <a asp-page="/Lots/Index" class="btn btn-custom">Lotes</a>
-                }
-                else if (role == "Almacenero")
-                {
-                    <a asp-page="/Lots/Index" class="btn btn-custom">Lotes</a>
-                    <a asp-page="/Providers/Index" class="btn btn-custom">Proveedores</a>
-                }
-            </div>
-        </div>
-    </section>
-}
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
