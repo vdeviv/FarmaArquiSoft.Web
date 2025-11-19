@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace FarmaArquiSoft.Web.Pages.Auth
 {
@@ -44,20 +47,51 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         return Page();
                     }
 
-                    // Guardamos token y datos básicos del usuario en cookies (HTTP only para token)
-                    Response.Cookies.Append("AuthToken", auth.Token, new CookieOptions
+                    // Guardar JWT (opcional) en cookie HttpOnly
+                    var tokenOptions = new CookieOptions
                     {
                         HttpOnly = true,
-                        Secure = true,
+                        Secure = Request.IsHttps,
                         SameSite = SameSiteMode.Lax,
-                        Expires = DateTimeOffset.UtcNow.AddHours(8)
-                    });
+                        Expires = DateTimeOffset.UtcNow.AddHours(8),
+                        Path = "/"
+                    };
+                    Response.Cookies.Append("AuthToken", auth.Token, tokenOptions);
 
+                    // Crear ClaimsPrincipal y hacer SignIn (cookie auth) para poblar User.Identity
                     if (auth.User is not null)
                     {
-                        Response.Cookies.Append("UserId", auth.User.id.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
-                        Response.Cookies.Append("Username", auth.User.username ?? string.Empty, new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
-                        Response.Cookies.Append("UserRole", auth.User.role.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
+                        var claims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, auth.User.id.ToString()),
+                            new Claim(ClaimTypes.Name, auth.User.username ?? ""),
+                            new Claim(ClaimTypes.Role, auth.User.role.ToString())
+                        };
+
+                        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        var principal = new ClaimsPrincipal(identity);
+
+                        var authProperties = new AuthenticationProperties
+                        {
+                            IsPersistent = true,
+                            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                        };
+
+                        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+
+                        // Opcional: cookies legibles con datos públicos
+                        var publicOptions = new CookieOptions
+                        {
+                            HttpOnly = false,
+                            Secure = Request.IsHttps,
+                            SameSite = SameSiteMode.Lax,
+                            Expires = DateTimeOffset.UtcNow.AddHours(8),
+                            Path = "/"
+                        };
+
+                        Response.Cookies.Append("UserId", auth.User.id.ToString(), publicOptions);
+                        Response.Cookies.Append("Username", auth.User.username ?? string.Empty, publicOptions);
+                        Response.Cookies.Append("UserRole", auth.User.role.ToString(), publicOptions);
                     }
 
                     TempData["SuccessMessage"] = "Autenticación correcta.";

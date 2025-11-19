@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace FarmaArquiSoft.Web.Pages.Auth
 {
@@ -9,13 +11,17 @@ namespace FarmaArquiSoft.Web.Pages.Auth
         {
         }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
-            // Borramos cookies locales usadas para la sesión
-            Response.Cookies.Delete("AuthToken");
-            Response.Cookies.Delete("UserId");
-            Response.Cookies.Delete("Username");
-            Response.Cookies.Delete("UserRole");
+            // Sign out from cookie authentication
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // Borramos cookies con Path="/" para que coincida con las creadas en Login
+            var options = new CookieOptions { Path = "/" };
+            Response.Cookies.Delete("AuthToken", options);
+            Response.Cookies.Delete("UserId", options);
+            Response.Cookies.Delete("Username", options);
+            Response.Cookies.Delete("UserRole", options);
 
             TempData["SuccessMessage"] = "Sesión cerrada correctamente.";
             return RedirectToPage("/Auth/Login");

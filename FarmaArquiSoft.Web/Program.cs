@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,26 @@ builder.Services.AddHttpClient("lotesApi", c =>
 });
 builder.Services.AddScoped<LotApi>();
 
+// -----------------------------
+// Autenticación por cookies
+// -----------------------------
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Cookie.Name = "FarmaAuth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+        // En desarrollo dejamos SameAsRequest para evitar problemas con HTTP
+        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+    });
+
+builder.Services.AddAuthorization();
+// -----------------------------
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -40,6 +61,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+
+// Important: authentication middleware antes de authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
