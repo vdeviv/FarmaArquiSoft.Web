@@ -1,20 +1,22 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using FarmaArquiSoft.Web.DTOs;
+using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Linq;
+
 
 namespace FarmaArquiSoft.Web.Pages.Users
 {
     public class Edit : PageModel
     {
-        private readonly HttpClient _http;
+        private readonly UserApi _userApi;
 
-        public Edit(IHttpClientFactory factory)
+        public Edit(UserApi userApi)
         {
-            _http = factory.CreateClient("usersApi");
+            _userApi = userApi;
         }
 
         [BindProperty]
@@ -30,28 +32,16 @@ namespace FarmaArquiSoft.Web.Pages.Users
 
             try
             {
-                var res = await _http.GetAsync($"/api/user/{id}");
-                if (res.StatusCode == HttpStatusCode.NotFound)
+                var dto = await _userApi.GetByIdAsync(id);
+
+                if (dto == null)
                 {
                     TempData["ErrorMessage"] = $"Usuario con ID {id} no encontrado.";
                     return RedirectToPage("Index");
                 }
-                if (!res.IsSuccessStatusCode)
-                {
-                    TempData["ErrorMessage"] =
-                        $"Error al cargar usuario. Código: {(int)res.StatusCode}, Detalle: {res.ReasonPhrase}";
-                    return RedirectToPage("Index");
-                }
-
-                var dto = await res.Content.ReadFromJsonAsync<UserDTO>();
-                if (dto == null)
-                {
-                    TempData["ErrorMessage"] = "La respuesta del API no contenía datos.";
-                    return RedirectToPage("Index");
-                }
 
                 Usuario = dto;
-                DisplayUsername = dto.Username ?? string.Empty;
+                DisplayUsername = dto.username ?? string.Empty;
 
                 return Page();
             }
@@ -77,7 +67,7 @@ namespace FarmaArquiSoft.Web.Pages.Users
 
             try
             {
-                var response = await _http.PutAsJsonAsync($"/api/user/{Usuario.Id}", Usuario);
+                var response = await _userApi.UpdateAsync(Usuario);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -88,7 +78,27 @@ namespace FarmaArquiSoft.Web.Pages.Users
                 if (response.StatusCode == HttpStatusCode.BadRequest)
                 {
                     var jsonContent = await response.Content.ReadAsStringAsync();
-                    TryMapValidation(jsonContent, nameof(Usuario));
+
+                    ApiValidationFacade.MapValidationErrors(
+                        modelState: ModelState,
+                        jsonContent: jsonContent,
+                        prefix: nameof(Usuario),
+                        fieldMap: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["first_name"] = "first_name",
+                            ["last_first_name"] = "last_first_name",
+                            ["last_second_name"] = "last_second_name",
+                            ["mail"] = "mail",
+                            ["ci"] = "ci",
+                            ["phone"] = "phone"
+                        },
+                        mailPropertyName: "mail",
+                        idPropertyName: "ci",
+                        mailKeywords: new[] { "correo", "mail" },
+                        idKeywords: new[] { "ci", "carnet", "identidad" }
+                    );
+
+
                     return Page();
                 }
 
@@ -112,102 +122,6 @@ namespace FarmaArquiSoft.Web.Pages.Users
         private void LoadRoles()
         {
             Roles = new SelectList(Enum.GetValues(typeof(UserRole)));
-        }
-
-        private void TryMapValidation(string jsonContent, string prefix)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(jsonContent);
-                var root = doc.RootElement;
-
-                // 1) DomainException -> { "message": "..." }
-                if (root.TryGetProperty("message", out var msgElement) &&
-                    msgElement.ValueKind == JsonValueKind.String)
-                {
-                    var msg = msgElement.GetString() ?? string.Empty;
-
-                    // Ignoramos el mensaje genérico de ValidationException
-                    if (!string.IsNullOrWhiteSpace(msg) &&
-                        !msg.Contains("Validación de dominio falló", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string modelStateKey;
-
-                        if (msg.Contains("correo", StringComparison.OrdinalIgnoreCase) ||
-                            msg.Contains("mail", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Mensajes de correo -> Mail
-                            modelStateKey = string.IsNullOrWhiteSpace(prefix)
-                                ? "Mail"
-                                : $"{prefix}.Mail";
-                        }
-                        else if (msg.Contains("ci", StringComparison.OrdinalIgnoreCase) ||
-                                 msg.Contains("carnet", StringComparison.OrdinalIgnoreCase) ||
-                                 msg.Contains("identidad", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Mensajes de CI -> Ci
-                            modelStateKey = string.IsNullOrWhiteSpace(prefix)
-                                ? "Ci"
-                                : $"{prefix}.Ci";
-                        }
-                        else
-                        {
-                            // Otros DomainException -> error general arriba
-                            modelStateKey = string.Empty;
-                        }
-
-                        ModelState.AddModelError(modelStateKey, msg);
-                    }
-                }
-
-                // 2) ValidationException -> { "errors": { "first_name": "...", ... } }
-                if (root.TryGetProperty("errors", out var errorsElement) &&
-                    errorsElement.ValueKind == JsonValueKind.Object)
-                {
-                    var fieldMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                    {
-                        ["first_name"] = "FirstName",
-                        ["last_first_name"] = "LastFirstName",
-                        ["last_second_name"] = "LastSecondName",
-                        ["mail"] = "Mail",
-                        ["ci"] = "Ci",
-                        ["phone"] = "Phone"
-                    };
-
-                    foreach (var kvp in errorsElement.EnumerateObject())
-                    {
-                        var apiFieldName = kvp.Name;
-                        var value = kvp.Value;
-
-                        if (!fieldMap.TryGetValue(apiFieldName, out var dtoPropName))
-                            dtoPropName = apiFieldName;
-
-                        var modelStateKey = string.IsNullOrWhiteSpace(prefix)
-                            ? dtoPropName
-                            : $"{prefix}.{dtoPropName}";
-
-                        if (value.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var err in value.EnumerateArray())
-                            {
-                                ModelState.AddModelError(
-                                    modelStateKey,
-                                    err.GetString() ?? err.ToString() ?? "Error de campo.");
-                            }
-                        }
-                        else if (value.ValueKind == JsonValueKind.String)
-                        {
-                            ModelState.AddModelError(
-                                modelStateKey,
-                                value.GetString() ?? "Error de campo.");
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Si algo falla al parsear, no rompemos la página
-            }
         }
     }
 }

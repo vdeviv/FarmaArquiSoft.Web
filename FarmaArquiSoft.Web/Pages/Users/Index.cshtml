@@ -51,23 +51,23 @@
                     foreach (var u in Model.Users)
                     {
                         <tr>
-                            <td class="fw-semibold">@u.Username</td>
+                            <td class="fw-semibold">@u.username</td>
 @*                             <td>@u.FirstName</td>
- *@                            <td>@u.LastFirstName @u.LastSecondName</td>
+ *@                            <td>@u.last_first_name @u.last_second_name</td>
                             <td style="white-space: normal; word-break: break-word; max-width: 220px;">
-                                @u.Mail
+                                @u.mail
                             </td>
-                            <td>@u.Phone</td>
-                            <td>@u.Ci</td>
+                            <td>@u.phone</td>
+                            <td>@u.ci</td>
                             <td>
                                 <span class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
-                                    @u.Role
+                                    @u.role
                                 </span>
                             </td>
                             <td>
                                 <div class="d-flex justify-content-center gap-2">
                                     <a asp-page="Edit"
-                                       asp-route-id="@u.Id"
+                                       asp-route-id="@u.id"
                                        class="btn btn-sm btn-outline-warning px-3 rounded-pill"
                                        title="Editar">
                                         <i class="bi bi-pencil"></i>
@@ -75,7 +75,7 @@
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger px-3 rounded-pill"
                                             title="Eliminar"
-                                            onclick="openDeleteUserModal(@u.Id, '@u.Username')">
+                                            onclick="openDeleteUserModal(@u.id, '@u.username')">
                                         <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>

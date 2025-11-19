@@ -55,9 +55,9 @@ namespace FarmaArquiSoft.Web.Pages.Auth
 
                     if (auth.User is not null)
                     {
-                        Response.Cookies.Append("UserId", auth.User.Id.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
-                        Response.Cookies.Append("Username", auth.User.Username ?? string.Empty, new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
-                        Response.Cookies.Append("UserRole", auth.User.Role.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
+                        Response.Cookies.Append("UserId", auth.User.id.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
+                        Response.Cookies.Append("Username", auth.User.username ?? string.Empty, new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
+                        Response.Cookies.Append("UserRole", auth.User.role.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow.AddHours(8) });
                     }
 
                     TempData["SuccessMessage"] = "Autenticación correcta.";
