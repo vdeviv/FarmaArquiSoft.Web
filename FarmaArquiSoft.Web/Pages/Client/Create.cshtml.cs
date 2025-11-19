@@ -1,10 +1,10 @@
 ﻿using FarmaArquiSoft.Web.DTOs;
+using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json; 
-using System;
+using System.Linq;
 
 namespace FarmaArquiSoft.Web.Pages.Client
 {
@@ -17,7 +17,7 @@ namespace FarmaArquiSoft.Web.Pages.Client
 
         public Create(IHttpClientFactory factory)
         {
-            _httpClient = factory.CreateClient("clientsApi"); 
+            _httpClient = factory.CreateClient("clientsApi");
         }
 
         public void OnGet() { }
@@ -43,71 +43,49 @@ namespace FarmaArquiSoft.Web.Pages.Client
                 {
                     var jsonContent = await response.Content.ReadAsStringAsync();
 
-                    Console.WriteLine($"[API DEBUG] Raw Error JSON from API (HTTP 400): {jsonContent}");
-
-                    try
+                    // Configuración específica para CLIENTES
+                    var fieldMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                     {
-                        using (var doc = JsonDocument.Parse(jsonContent))
+                        ["first_name"] = "first_name",
+                        ["last_name"]  = "last_name",
+                        ["nit"]        = "nit",
+                        ["email"]      = "email"
+                    };
+
+                    ApiValidationFacade.MapValidationErrors(
+                        modelState: ModelState,
+                        jsonContent: jsonContent,
+                        prefix: nameof(Cliente),
+                        fieldMap: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                         {
-                            JsonElement rootElement = doc.RootElement;
-                            JsonElement errorsToProcess = rootElement; 
-
-                            if (rootElement.TryGetProperty("error", out JsonElement generalError) && generalError.ValueKind == JsonValueKind.String)
-                            {
-                                ModelState.AddModelError(string.Empty, generalError.GetString() ?? "Error de dominio no especificado.");
-                            }
-                            else if (rootElement.TryGetProperty("errors", out JsonElement errorsElement) && errorsElement.ValueKind == JsonValueKind.Object)
-                            {
-                                errorsToProcess = errorsElement;
-                            }
-
-                            if (errorsToProcess.ValueKind == JsonValueKind.Object)
-                            {
-                                foreach (var kvp in errorsToProcess.EnumerateObject())
-                                {
-                                    string apiFieldName = kvp.Name;
-
-                                    string modelStateKey = $"{nameof(Cliente)}.{apiFieldName}";
-
-                                    if (kvp.Value.ValueKind == JsonValueKind.Array)
-                                    {
-                                        foreach (var errorArrayElement in kvp.Value.EnumerateArray())
-                                        {
-                                            ModelState.AddModelError(modelStateKey, errorArrayElement.GetString() ?? errorArrayElement.ToString() ?? "Error de campo.");
-                                        }
-                                    }
-                                    else if (kvp.Value.ValueKind == JsonValueKind.String)
-                                    {
-                                        ModelState.AddModelError(modelStateKey, kvp.Value.GetString() ?? "Error de campo.");
-                                    }
-                                }
-                            }
-                            else if (!rootElement.TryGetProperty("error", out _))
-                            {
-                                ModelState.AddModelError(string.Empty, $"Error de validación del API con formato inesperado. Contenido: {jsonContent}");
-                            }
-                        }
-                    }
-                    catch (JsonException ex)
-                    {
-                        ModelState.AddModelError(string.Empty, $"El API devolvió un HTTP 400, pero la respuesta no es JSON válido: {jsonContent}. Detalle: {ex.Message}");
-                    }
+                            ["first_name"] = "first_name",
+                            ["last_name"] = "last_name",
+                            ["nit"] = "nit",
+                            ["email"] = "email"
+                        },
+                        mailPropertyName: "email",
+                        idPropertyName: "nit",
+                        mailKeywords: new[] { "correo", "email", "mail" },
+                        idKeywords: new[] { "nit", "c.i", "ci" }
+                    );
 
                     return Page();
                 }
 
-                ModelState.AddModelError(string.Empty, $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
+                ModelState.AddModelError(string.Empty,
+                    $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
                 return Page();
-
             }
             catch (HttpRequestException ex)
             {
-                ModelState.AddModelError(string.Empty, $"Error de conexión con el API: {ex.Message}. Por favor, verifique que Clients.Api esté en ejecución.");
+                ModelState.AddModelError(string.Empty,
+                    $"Error de conexión con el API: {ex.Message}. Por favor, verifique que Clients.Api esté en ejecución.");
                 return Page();
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, $"Ocurrió un error inesperado al procesar la solicitud: {ex.Message}");
+                ModelState.AddModelError(string.Empty,
+                    $"Ocurrió un error inesperado al procesar la solicitud: {ex.Message}");
                 return Page();
             }
         }

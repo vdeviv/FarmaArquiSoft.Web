@@ -1,4 +1,6 @@
-﻿namespace FarmaArquiSoft.Web.DTOs
+﻿using System.Text.Json.Serialization;
+
+namespace FarmaArquiSoft.Web.DTOs
 {
     public enum UserRole
     {
@@ -9,28 +11,60 @@
 
     public class UserDTO
     {
-        public int Id { get; set; }
-        public string Username { get; set; } = "";
-        public string FirstName { get; set; } = "";
-        public string LastFirstName { get; set; } = "";
-        public string LastSecondName { get; set; } = "";
-        public string? Mail { get; set; }
-        public string Phone { get; set; } = "";
-        public string Ci { get; set; } = "";
-        public UserRole Role { get; set; }
+        [JsonPropertyName("id")]
+        public int id { get; set; }
 
-        // Opcional: no existía en la API de lectura, lo comentamos
+        [JsonPropertyName("username")]
+        public string username { get; set; } = "";
+
+        // 👇 Estos 3 son los críticos, aquí estaba el problema
+        [JsonPropertyName("firstName")]
+        public string first_name { get; set; } = "";
+
+        [JsonPropertyName("lastFirstName")]
+        public string last_first_name { get; set; } = "";
+
+        [JsonPropertyName("lastSecondName")]
+        public string last_second_name { get; set; } = "";
+
+        [JsonPropertyName("mail")]
+        public string? mail { get; set; }
+
+        [JsonPropertyName("phone")]
+        public string phone { get; set; } = "";
+
+        [JsonPropertyName("ci")]
+        public string ci { get; set; } = "";
+
+        [JsonPropertyName("role")]
+        public UserRole role { get; set; }
         public bool IsActive { get; set; }
     }
+
     public class UserListItemDto
     {
-        public int Id { get; set; }
-        public string Username { get; set; } = "";
-        public string LastFirstName { get; set; } = "";
-        public string? LastSecondName { get; set; }
-        public string? Mail { get; set; }
-        public string Phone { get; set; } = "";
-        public string Ci { get; set; } = "";
-        public UserRole Role { get; set; }
+        [JsonPropertyName("id")]
+        public int id { get; set; }
+
+        [JsonPropertyName("username")]
+        public string username { get; set; } = "";
+
+        [JsonPropertyName("lastFirstName")]
+        public string last_first_name { get; set; } = "";
+
+        [JsonPropertyName("lastSecondName")]
+        public string last_second_name { get; set; } = "";
+
+        [JsonPropertyName("mail")]
+        public string? mail { get; set; }
+
+        [JsonPropertyName("phone")]
+        public string phone { get; set; } = "";
+
+        [JsonPropertyName("ci")]
+        public string ci { get; set; } = "";
+
+        [JsonPropertyName("role")]
+        public UserRole role { get; set; }
     }
 }

@@ -1,41 +1,37 @@
 using FarmaArquiSoft.Web.DTOs;
+using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net;
-using System.Net.Http.Json;
 
 namespace FarmaArquiSoft.Web.Pages.Users
 {
     public class Index : PageModel
     {
-        private readonly HttpClient _http;
+        private readonly UserApi _userApi;
 
-        public Index(IHttpClientFactory factory)
+        public Index(UserApi userApi)
         {
-            _http = factory.CreateClient("usersApi");
+            _userApi = userApi;
         }
 
-        public List<UserDTO> Users { get; private set; } = new();
+        public List<UserListItemDto> Users { get; private set; } = new();
 
         public async Task OnGetAsync()
         {
             try
             {
-                var res = await _http.GetAsync("/api/user");
-                if (res.IsSuccessStatusCode)
-                {
-                    var list = await res.Content.ReadFromJsonAsync<List<UserDTO>>();
-                    Users = list ?? new();
-                }
-                else
-                {
-                    TempData["ErrorMessage"] =
-                        $"Error al cargar usuarios. Código: {(int)res.StatusCode}, Detalle: {res.ReasonPhrase}";
-                }
+                Users = await _userApi.GetAllAsync();
             }
             catch (HttpRequestException ex)
             {
-                TempData["ErrorMessage"] = $"Error de conexión con el API: {ex.Message}";
+                TempData["ErrorMessage"] =
+                    $"Error de conexión con el API: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] =
+                    $"Ocurrió un error inesperado al cargar usuarios: {ex.Message}";
             }
         }
 
@@ -44,7 +40,7 @@ namespace FarmaArquiSoft.Web.Pages.Users
         {
             try
             {
-                var res = await _http.DeleteAsync($"/api/user/{id}");
+                var res = await _userApi.DeleteAsync(id);
 
                 if (res.IsSuccessStatusCode)
                 {
@@ -62,7 +58,13 @@ namespace FarmaArquiSoft.Web.Pages.Users
             }
             catch (HttpRequestException ex)
             {
-                TempData["ErrorMessage"] = $"Error de conexión con el API al eliminar: {ex.Message}";
+                TempData["ErrorMessage"] =
+                    $"Error de conexión con el API al eliminar: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] =
+                    $"Error inesperado al eliminar: {ex.Message}";
             }
 
             return RedirectToPage();

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FarmaArquiSoft.Web.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -7,17 +8,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 
-// Microservicio de USUARIOS 
 builder.Services.AddHttpClient("usersApi", c =>
 {
-    c.BaseAddress = new Uri("http://localhost:5031"); 
+    // Usa el puerto HTTPS del perfil "https" del User.Api
+    c.BaseAddress = new Uri("https://localhost:7067");
 });
 
-// ✅ Microservicio de CLIENTES
+// Microservicio de CLIENTES
 builder.Services.AddHttpClient("clientsApi", c =>
 {
-    c.BaseAddress = new Uri("http://localhost:5142"); 
+    c.BaseAddress = new Uri("http://localhost:5142");
 });
+
+// 👇 Registramos la fachada UserApi para DI
+builder.Services.AddScoped<UserApi>();
 
 var app = builder.Build();
 
