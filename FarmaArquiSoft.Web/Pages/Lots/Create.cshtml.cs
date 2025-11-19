@@ -19,6 +19,8 @@ namespace FarmaArquiSoft.Web.Pages.Lots
 
         public void OnGet()
         {
+            // Fecha mínima para evitar fechas "0001-01-01"
+            Input.expiration_date = DateTime.Today;
         }
 
         [ValidateAntiForgeryToken]

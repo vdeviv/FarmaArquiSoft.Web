@@ -31,8 +31,10 @@ namespace FarmaArquiSoft.Web.Pages.Lots
                 TempData["ErrorMessage"] = "Lote no encontrado.";
                 return RedirectToPage("Index");
             }
-
             Input = lot;
+            if (Input.expiration_date < DateTime.Today)
+                Input.expiration_date = DateTime.Today;
+
             return Page();
         }
 
