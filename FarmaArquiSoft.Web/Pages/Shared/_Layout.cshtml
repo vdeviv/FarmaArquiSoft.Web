@@ -39,20 +39,21 @@
 
                 <div class="collapse navbar-collapse" id="navmenu">
                     @using System.Security.Claims
+                    @{
+                        // Preferir claims de User; si no existen, usar cookies generadas por el login (fallback)
+                        var cookieUsername = Context.Request.Cookies["Username"];
+                        var cookieRole = Context.Request.Cookies["UserRole"];
+                        var tokenCookie = Context.Request.Cookies["AuthToken"];
+                        var isAuthenticated = (User?.Identity?.IsAuthenticated == true) || !string.IsNullOrEmpty(tokenCookie);
+                        var username = User?.Identity?.Name ?? cookieUsername ?? "Invitado";
+                        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? cookieRole ?? "SinRol";
+                    }
 
                     <ul class="navbar-nav ms-auto align-items-center gap-3">
-                        @{
-                            var currentRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "SinRol";
-                            <span>@currentRole</span>
-
-                        }
-
-                        @if (1==1)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-white fw-semibold" asp-page="/Users/Index">Usuarios</a>
-                            </li>
-                        }
+                        @* Ajusta visibilidad de links por rol si lo deseas *@
+                        <li class="nav-item">
+                            <a class="nav-link text-white fw-semibold" asp-page="/Users/Index">Usuarios</a>
+                        </li>
 
                         <li class="nav-item">
                             <a class="nav-link text-white fw-semibold" asp-page="/Client/Index">Clientes</a>
@@ -69,14 +70,12 @@
                     </ul>
 
                     <div class="d-flex align-items-center ms-3">
-                        @if (User?.Identity?.IsAuthenticated == true)
+                        @if (isAuthenticated)
                         {
-                            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "SinRol";
-
                             <div class="dropdown">
                                 <a class="btn btn-outline-light dropdown-toggle d-flex align-items-center rounded-pill px-3" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-person-circle me-2"></i>
-                                    <span>@User.Identity!.Name</span>
+                                    <span>@username</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4">
                                     <li class="dropdown-item-text text-muted small px-3">
