@@ -1,5 +1,5 @@
 ﻿body {
-    background: linear-gradient(135deg, #d7f5dc 0%, #ffffff 100%);
+    background: radial-gradient(circle at center, #d3f1d7 0%, #b7e3bd 40%, #a3d7ad 70%, #8ccf98 100%);
     font-family: 'Poppins', sans-serif;
     display: flex;
     flex-direction: column;
@@ -12,89 +12,95 @@
 .login-container {
     text-align: center;
     width: 100%;
-    max-width: 420px;
+    max-width: 520px; 
 }
 
 .login-card {
     background: #ffffff;
-    border-radius: 20px;
-    padding: 2.5rem;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease;
+    border-radius: 24px;
+    padding: 3rem 3.5rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    transition: all 0.25s ease-out;
 }
 
     .login-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-6px);
+        box-shadow: 0 16px 45px rgba(0,0,0,0.22);
     }
 
 .login-logo {
-    width: 80px;
+    width: 85px;
     height: auto;
+    margin-bottom: 0.8rem;
 }
-
 .form-control {
-    border-radius: 30px;
-    padding: 0.75rem 1rem;
-    border: 1.5px solid #c9e2cd;
-    font-size: 0.95rem;
+    border-radius: 28px;
+    padding: 0.8rem 1.2rem;
+    border: 2px solid #c4d9c7;
+    font-size: 1rem;
+    background-color: #f8fdf9;
+    transition: all 0.2s ease;
 }
 
     .form-control:focus {
-        border-color: #6DB076;
-        box-shadow: 0 0 5px rgba(109, 176, 118, 0.3);
+        border-color: #56a866;
+        box-shadow: 0 0 8px rgba(86, 168, 102, 0.35);
     }
 
 .btn-success {
-    background-color: #6DB076;
+    background-color: #56a866;
     border: none;
+    padding: 0.85rem 0;
+    border-radius: 28px;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
     transition: all 0.2s ease-in-out;
 }
 
     .btn-success:hover {
-        background-color: #5a9a63;
+        background-color: #4a9659;
+        transform: translateY(-2px);
     }
 
 .btn-outline-success {
-    border: 2px solid #6DB076;
-    color: #6DB076;
-    transition: all 0.2s ease;
+    border: 2px solid #56a866;
+    color: #56a866;
+    border-radius: 28px;
+    transition: 0.25s ease;
 }
 
     .btn-outline-success:hover {
-        background-color: #6DB076;
+        background-color: #56a866;
         color: #fff;
     }
 
 .alert {
     border-radius: 15px;
+    font-size: 0.95rem;
 }
 
-.login-footer {
-    margin-top: 1rem;
-    color: #777;
-    font-size: 0.9rem;
+.toggle-password {
+    cursor: pointer;
+    color: #56a866;
+    transition: 0.2s;
 }
 
-.logout-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background: linear-gradient(135deg, #fdf2f2 0%, #ffffff 100%);
-    font-family: 'Poppins', sans-serif;
+    .toggle-password:hover {
+        color: #3e814c;
+    }
+
+.password-wrapper {
+    position: relative;
 }
 
-.logout-card {
-    background: #fff;
-    border-radius: 20px;
-    padding: 2.5rem;
-    width: 400px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
+    .password-wrapper input {
+        padding-right: 3rem;
+    }
 
-.logout-footer {
-    margin-top: 1rem;
-    color: #777;
-    font-size: 0.9rem;
-}
+    .password-wrapper i {
+        position: absolute;
+        top: 50%;
+        right: 14px;
+        transform: translateY(-50%);
+        font-size: 1.2rem;
+    }
