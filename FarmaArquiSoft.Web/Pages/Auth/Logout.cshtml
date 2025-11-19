@@ -1,0 +1,15 @@
+﻿@page
+@model FarmaArquiSoft.Web.Pages.Auth.LogoutModel
+@{
+    ViewData["Title"] = "Cerrando sesión";
+}
+
+<div class="logout-container">
+    <div class="logout-card text-center">
+        <h4 class="mb-3">Cerrando sesión...</h4>
+        <form method="post">
+            <button type="submit" class="btn btn-danger">Confirmar cierre de sesión</button>
+            <a asp-page="/Index" class="btn btn-secondary ms-2">Cancelar</a>
+        </form>
+    </div>
+</div>
