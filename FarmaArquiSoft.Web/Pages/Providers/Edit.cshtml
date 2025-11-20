@@ -1,0 +1,31 @@
+
+@page "{id}"
+@model Providers_EditModel
+
+<h2>Editar Proveedor</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Provider.Id"/>
+
+    <div class="mb-2">
+        <label>Nombre</label>
+        <input class="form-control" asp-for="Provider.FirstName"/>
+    </div>
+
+    <div class="mb-2">
+        <label>Apellido</label>
+        <input class="form-control" asp-for="Provider.LastName"/>
+    </div>
+
+    <div class="mb-2">
+        <label>Email</label>
+        <input class="form-control" asp-for="Provider.Email"/>
+    </div>
+
+    <div class="mb-2">
+        <label>Teléfono</label>
+        <input class="form-control" asp-for="Provider.Phone"/>
+    </div>
+
+    <button class="btn btn-success mt-3">Actualizar</button>
+</form>
