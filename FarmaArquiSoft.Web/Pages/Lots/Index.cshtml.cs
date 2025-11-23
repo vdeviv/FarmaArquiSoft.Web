@@ -1,7 +1,8 @@
+using System.Net;
+using FarmaArquiSoft.Web.DTOs;
+using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using FarmaArquiSoft.Web.DTOs;        
-using FarmaArquiSoft.Web.Services;    
 
 namespace FarmaArquiSoft.Web.Pages.Lots
 {
@@ -18,7 +19,18 @@ namespace FarmaArquiSoft.Web.Pages.Lots
 
         public async Task OnGetAsync()
         {
-            Lots = await _lotApi.GetAllAsync();
+            try
+            {
+                Lots = await _lotApi.GetAllAsync();
+            }
+            catch (HttpRequestException ex)
+            {
+                TempData["ErrorMessage"] = $"Error de conexión al cargar lotes: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Ocurrió un error inesperado al cargar lotes: {ex.Message}";
+            }
         }
 
         [ValidateAntiForgeryToken]
@@ -32,12 +44,31 @@ namespace FarmaArquiSoft.Web.Pages.Lots
 
             try
             {
-                await _lotApi.DeleteAsync(id);
-                TempData["SuccessMessage"] = "Lote eliminado correctamente.";
+                var res = await _lotApi.DeleteAsync(id);
+
+                if (res.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Lote eliminado correctamente.";
+                }
+                else if (res.StatusCode == HttpStatusCode.NotFound)
+                {
+                    TempData["ErrorMessage"] = $"El lote con ID {id} no existe.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] =
+                        $"No se pudo eliminar. Código: {(int)res.StatusCode}, Detalle: {res.ReasonPhrase}";
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                TempData["ErrorMessage"] =
+                    $"Error de conexión con el API al eliminar: {ex.Message}";
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"No se pudo eliminar el lote: {ex.Message}";
+                TempData["ErrorMessage"] =
+                    $"Error inesperado al eliminar: {ex.Message}";
             }
 
             return RedirectToPage();

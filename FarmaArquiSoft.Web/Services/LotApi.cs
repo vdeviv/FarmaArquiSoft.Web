@@ -1,6 +1,5 @@
-﻿using System.Net.Http.Json;
-using FarmaArquiSoft.Web.DTOs;
-
+﻿using FarmaArquiSoft.Web.DTOs;
+using System.Net.Http.Json;
 namespace FarmaArquiSoft.Web.Services
 {
     public class LotApi
@@ -14,37 +13,31 @@ namespace FarmaArquiSoft.Web.Services
 
         public async Task<List<LotDTO>> GetAllAsync()
         {
-            return await _http.GetFromJsonAsync<List<LotDTO>>("api/lots");
+            var list = await _http.GetFromJsonAsync<List<LotDTO>>("api/lots");
+            return list ?? new List<LotDTO>();
         }
-
 
         public async Task<LotDTO?> GetByIdAsync(int id)
         {
             return await _http.GetFromJsonAsync<LotDTO>($"api/lots/{id}");
         }
 
-        // Crear un nuevo lote
-        public async Task CreateAsync(LotDTO lot)
+        // Crear un nuevo lote -> devolvemos HttpResponseMessage para usar ApiValidationFacade
+        public Task<HttpResponseMessage> CreateAsync(LotDTO lot)
         {
-            var response = await _http.PostAsJsonAsync("api/lots", lot);
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("No se pudo crear el lote.");
+            return _http.PostAsJsonAsync("api/lots", lot);
         }
 
-        public async Task UpdateAsync(int id, LotDTO lot)
+        // Actualizar lote
+        public Task<HttpResponseMessage> UpdateAsync(LotDTO lot)
         {
-            var response = await _http.PutAsJsonAsync($"api/lots/{id}", lot);
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("No se pudo actualizar el lote.");
+            return _http.PutAsJsonAsync($"api/lots/{lot.id}", lot);
         }
-        public async Task DeleteAsync(int id)
-        {
-            var response = await _http.DeleteAsync($"api/lots/{id}");
 
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("No se pudo eliminar el lote.");
+        // Eliminar lote
+        public Task<HttpResponseMessage> DeleteAsync(int id)
+        {
+            return _http.DeleteAsync($"api/lots/{id}");
         }
     }
 }

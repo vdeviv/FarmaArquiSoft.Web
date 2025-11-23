@@ -75,7 +75,6 @@ namespace FarmaArquiSoft.Web.Services
                                 ? mapped
                                 : apiFieldName;
 
-                        // Ej: "Cliente.first_name" o "Usuario.mail"
                         var modelStateKey = $"{prefix}.{dtoPropName}";
 
                         if (value.ValueKind == JsonValueKind.Array)
@@ -102,9 +101,6 @@ namespace FarmaArquiSoft.Web.Services
             }
         }
 
-        /// <summary>
-        /// Intenta obtener el mensaje de dominio ya sea desde "message" o "error".
-        /// </summary>
         private static bool TryGetDomainMessage(JsonElement root, out string message)
         {
             message = string.Empty;

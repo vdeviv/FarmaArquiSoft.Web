@@ -31,7 +31,7 @@
 
                     <div class="col-md-6">
                         <label asp-for="Usuario.last_second_name" class="form-label fw-semibold">Apellido Materno</label>
-                        <input asp-for="Usuario.last_second_name" class="form-control rounded-pill" placeholder="Ej. Pérez" required />
+                        <input asp-for="Usuario.last_second_name" class="form-control rounded-pill" placeholder="Ej. Pérez" />
                         <span asp-validation-for="Usuario.last_second_name" class="text-danger small"></span>
                     </div>
 
@@ -48,8 +48,32 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Usuario.ci" class="form-label fw-semibold">Carnet de Identidad</label>
-                        <input asp-for="Usuario.ci" class="form-control rounded-pill" placeholder="Ej. 1234567" required />
+                        <label class="form-label fw-semibold">Carnet de Identidad</label>
+                        <div class="input-group">
+                            <input asp-for="CiPrefix"
+                                   class="form-control rounded-pill"
+                                   style="max-width: 80px;"
+                                   placeholder="AB"
+                                   maxlength="2"
+                                   title="Prefijo opcional, solo letras (máx. 2)" />
+                            <input asp-for="CiNumber"
+                                   class="form-control rounded-pill mx-1"
+                                   placeholder="13065677"
+                                   maxlength="12"
+                                   title="Solo números" />
+                            <input asp-for="CiSuffix"
+                                   class="form-control rounded-pill"
+                                   style="max-width: 80px;"
+                                   placeholder="C"
+                                   maxlength="2"
+                                   title="Sufijo opcional, solo letras (máx. 2)" />
+                        </div>
+
+                        <div class="mt-1 d-flex gap-3 flex-wrap">
+                            <span asp-validation-for="CiPrefix" class="text-danger small"></span>
+                            <span asp-validation-for="CiNumber" class="text-danger small"></span>
+                            <span asp-validation-for="CiSuffix" class="text-danger small"></span>
+                        </div>
                         <span asp-validation-for="Usuario.ci" class="text-danger small"></span>
                     </div>
 

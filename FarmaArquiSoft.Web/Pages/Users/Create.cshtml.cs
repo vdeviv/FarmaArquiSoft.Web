@@ -1,12 +1,9 @@
 using System.Net;
-using System.Net.Http.Json;
 using FarmaArquiSoft.Web.DTOs;
 using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Linq;
-
 
 namespace FarmaArquiSoft.Web.Pages.Users
 {
@@ -22,6 +19,16 @@ namespace FarmaArquiSoft.Web.Pages.Users
         [BindProperty]
         public UserDTO Usuario { get; set; } = new();
 
+        // Nuevos campos para el CI dividido
+        [BindProperty]
+        public string CiPrefix { get; set; } = string.Empty;
+
+        [BindProperty]
+        public string CiNumber { get; set; } = string.Empty;
+
+        [BindProperty]
+        public string CiSuffix { get; set; } = string.Empty;
+
         public SelectList Roles { get; private set; } = default!;
 
         public void OnGet()
@@ -34,8 +41,14 @@ namespace FarmaArquiSoft.Web.Pages.Users
         {
             LoadRoles();
 
+            // Normalizamos y validamos las partes del CI
+            ValidateCiParts();
+
             if (!ModelState.IsValid)
                 return Page();
+
+            // Construir el CI concatenando prefijo + número + sufijo
+            Usuario.ci = $"{CiPrefix}{CiNumber}{CiSuffix}";
 
             try
             {
@@ -93,6 +106,23 @@ namespace FarmaArquiSoft.Web.Pages.Users
         private void LoadRoles()
         {
             Roles = new SelectList(Enum.GetValues(typeof(UserRole)));
+        }
+
+        private void ValidateCiParts()
+        {
+            CiPrefix = CiPrefix?.Trim() ?? string.Empty;
+            CiNumber = CiNumber?.Trim() ?? string.Empty;
+            CiSuffix = CiSuffix?.Trim() ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(CiPrefix) && !CiPrefix.All(char.IsLetter))
+            {
+                ModelState.AddModelError(nameof(CiPrefix), "El prefijo solo puede contener letras.");
+            }
+
+            if (!string.IsNullOrEmpty(CiSuffix) && !CiSuffix.All(char.IsLetter))
+            {
+                ModelState.AddModelError(nameof(CiSuffix), "El sufijo solo puede contener letras.");
+            }
         }
     }
 }
