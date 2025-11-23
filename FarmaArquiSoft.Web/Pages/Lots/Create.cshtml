@@ -14,7 +14,8 @@
 
         <div class="card-body p-4">
             <form method="post">
-                <div asp-validation-summary="All" class="alert alert-danger"></div>
+                <!-- Solo errores de modelo/servidor, no todos los del navegador -->
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                 <div class="row g-3">
 
@@ -23,6 +24,7 @@
                         <input asp-for="Input.batch_number"
                                class="form-control rounded-pill"
                                required />
+                        <span asp-validation-for="Input.batch_number" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
@@ -30,8 +32,9 @@
                         <input asp-for="Input.expiration_date"
                                type="date"
                                class="form-control rounded-pill"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
                                required />
+                        <!-- Mensajes que vengan del micro -->
+                        <span asp-validation-for="Input.expiration_date" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
@@ -41,6 +44,7 @@
                                min="1"
                                class="form-control rounded-pill"
                                required />
+                        <span asp-validation-for="Input.quantity" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-6">
@@ -51,6 +55,7 @@
                                min="0"
                                class="form-control rounded-pill"
                                required />
+                        <span asp-validation-for="Input.unit_cost" class="text-danger small"></span>
                     </div>
 
                 </div>
@@ -69,3 +74,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -9,9 +9,9 @@
                 ¿Estás seguro de eliminar este lote?
             </p>
 
-            <!-- Importante: handler y nombre del campo -->
+            <!-- Importante: handler y nombre del campo coinciden con OnPostDeleteAsync(int id) -->
             <form method="post" asp-page-handler="Delete">
-                <input type="hidden" id="deleteId" name="encryptedId" />
+                <input type="hidden" id="deleteId" name="id" />
                 <div class="d-flex justify-content-center gap-3">
                     <button type="submit" class="btn btn-danger rounded-pill px-4">
                         <i class="bi bi-trash"></i> Eliminar
