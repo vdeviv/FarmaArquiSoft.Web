@@ -1,0 +1,117 @@
+@page
+@model FarmaArquiSoft.Web.Pages.Providers.Index
+@{
+    ViewData["Title"] = "Gestión de Proveedores";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <h2 class="fw-bold text-success mb-0">
+        <i class="bi bi-truck me-2"></i> Gestión de Proveedores
+    </h2>
+
+    <a asp-page="/Providers/Create" class="btn btn-success shadow-sm rounded-pill px-4 d-flex align-items-center">
+        <i class="bi bi-plus-circle me-2"></i> Nuevo Proveedor
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] is string ok && !string.IsNullOrWhiteSpace(ok))
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @ok
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] is string err && !string.IsNullOrWhiteSpace(err))
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @err
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0 text-center">
+            <thead class="table-success text-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Providers != null && Model.Providers.Any())
+                {
+                    foreach (var p in Model.Providers)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                @p.first_name @p.last_name
+                            </td>
+                            <td style="white-space: normal; word-break: break-word; max-width: 220px;">
+                                @p.email
+                            </td>
+                            <td>@p.phone</td>
+                            <td>
+                                @if (!p.is_deleted)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary rounded-pill px-3">
+                                        Eliminado
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a asp-page="Edit"
+                                       asp-route-id="@p.id"
+                                       class="btn btn-sm btn-outline-warning px-3 rounded-pill"
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger px-3 rounded-pill"
+                                            title="Eliminar"
+                                            onclick="openDeleteProviderModal(@p.id, '@(p.first_name + " " + p.last_name)')">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox me-2"></i> No hay proveedores registrados.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<partial name="_DeleteProviderModalPartial" />
+
+@section Scripts {
+    <script>
+        const deleteProviderModal = new bootstrap.Modal(document.getElementById('deleteProviderModal'));
+
+        function openDeleteProviderModal(id, name) {
+            document.getElementById('deleteProviderId').value = id;
+            document.getElementById('deleteProviderMessage').textContent =
+                `¿Estás seguro de eliminar al proveedor "${name}"?`;
+            deleteProviderModal.show();
+        }
+    </script>
+}
