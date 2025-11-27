@@ -8,33 +8,30 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddHttpClient("usersApi", c =>
 {
-    // Usa el puerto HTTPS del perfil "https" del User.Api
     c.BaseAddress = new Uri("https://localhost:7067");
 });
-builder.Services.AddScoped<ClientApi>();
-// Microservicio de CLIENTES
 builder.Services.AddHttpClient("clientsApi", c =>
 {
     c.BaseAddress = new Uri("http://localhost:5142");
 });
-
-// Fachadas
-builder.Services.AddScoped<UserApi>();
-builder.Services.AddScoped<ClientApi>();
-
-//Microservicio de LOTES
 builder.Services.AddHttpClient("lotesApi", c =>
 {
-    c.BaseAddress = new Uri("http://localhost:5127"); 
+    c.BaseAddress = new Uri("http://localhost:5127");
 });
-builder.Services.AddScoped<LotApi>();
+builder.Services.AddHttpClient("providersApi", c =>
+{
+    c.BaseAddress = new Uri("http://localhost:5143");
+});
 
-// -----------------------------
-// Autenticación por cookies
-// -----------------------------
+builder.Services.AddScoped<LotApi>();
+builder.Services.AddScoped<UserApi>();
+builder.Services.AddScoped<ClientApi>();
+builder.Services.AddScoped<ProviderApi>();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -50,7 +47,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
-// -----------------------------
 
 var app = builder.Build();
 
@@ -62,11 +58,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
-
-// Important: authentication middleware antes de authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapRazorPages();
-
 app.Run();

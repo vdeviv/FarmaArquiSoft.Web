@@ -17,7 +17,6 @@ namespace FarmaArquiSoft.Web.DTOs
         [JsonPropertyName("username")]
         public string username { get; set; } = "";
 
-        // 👇 Estos 3 son los críticos, aquí estaba el problema
         [JsonPropertyName("firstName")]
         public string first_name { get; set; } = "";
 

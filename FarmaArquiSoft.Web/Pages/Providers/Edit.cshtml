@@ -1,0 +1,63 @@
+@page "{id:int}"
+@model FarmaArquiSoft.Web.Pages.Providers.Edit
+@{
+    ViewData["Title"] = "Editar Proveedor";
+}
+
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-warning text-dark text-center rounded-top-4 py-3">
+            <h3 class="mb-0">
+                <i class="bi bi-pencil-square me-2"></i>Editar Proveedor
+            </h3>
+        </div>
+
+        <div class="card-body p-4">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <input type="hidden" asp-for="Proveedor.id" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Proveedor.first_name" class="form-label fw-semibold">Nombre</label>
+                        <input asp-for="Proveedor.first_name" class="form-control rounded-pill" required />
+                        <span asp-validation-for="Proveedor.first_name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Proveedor.last_name" class="form-label fw-semibold">Apellido</label>
+                        <input asp-for="Proveedor.last_name" class="form-control rounded-pill" required />
+                        <span asp-validation-for="Proveedor.last_name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Proveedor.email" class="form-label fw-semibold">Correo electrónico</label>
+                        <input asp-for="Proveedor.email" class="form-control rounded-pill" type="email" />
+                        <span asp-validation-for="Proveedor.email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Proveedor.phone" class="form-label fw-semibold">Número de teléfono</label>
+                        <input asp-for="Proveedor.phone" class="form-control rounded-pill" />
+                        <span asp-validation-for="Proveedor.phone" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-warning text-dark px-4 rounded-pill shadow-sm">
+                        <i class="bi bi-save me-2"></i>Guardar Cambios
+                    </button>
+                    <a asp-page="Index" class="btn btn-outline-secondary px-4 rounded-pill ms-2">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
