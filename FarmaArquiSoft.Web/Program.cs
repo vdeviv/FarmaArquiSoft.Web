@@ -59,6 +59,59 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
+
+// Middleware que fuerza cambio de contraseña al primer login
+app.Use(async (context, next) =>
+{
+    try
+    {
+        var user = context.User;
+        var path = context.Request.Path;
+
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            var hasChanged = user.FindFirst("HasChangedPassword")?.Value;
+            var forceCookie = context.Request.Cookies["ForceChangePassword"];
+
+            if (string.Equals(hasChanged, "false", StringComparison.OrdinalIgnoreCase) || forceCookie == "1")
+            {
+                var allowedPrefixes = new[]
+                {
+                    "/Auth/ChangePassword",
+                    "/Auth/Logout",
+                    "/lib",
+                    "/css",
+                    "/js",
+                    "/images",
+                    "/favicon.ico"
+                };
+
+                var isAllowed = false;
+                foreach (var p in allowedPrefixes)
+                {
+                    if (path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isAllowed = true;
+                        break;
+                    }
+                }
+
+                if (!isAllowed)
+                {
+                    context.Response.Redirect("/Auth/ChangePassword");
+                    return;
+                }
+            }
+        }
+    }
+    catch
+    {
+        // En caso de error dejamos pasar la petición para evitar bloquear el sitio por un fallo del middleware.
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
 app.MapRazorPages();
 app.Run();

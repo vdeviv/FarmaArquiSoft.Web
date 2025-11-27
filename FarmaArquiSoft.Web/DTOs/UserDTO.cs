@@ -26,7 +26,7 @@ namespace FarmaArquiSoft.Web.DTOs
         [JsonPropertyName("lastSecondName")]
         public string last_second_name { get; set; } = "";
 
-        [JsonPropertyName("mail")]
+        [JsonPropertyName("mail")]      
         public string? mail { get; set; }
 
         [JsonPropertyName("phone")]
@@ -37,6 +37,12 @@ namespace FarmaArquiSoft.Web.DTOs
 
         [JsonPropertyName("role")]
         public UserRole role { get; set; }
+
+        [JsonPropertyName("has_changed_password")]
+        public bool has_changed_password { get; set; } = true;
+
+        [JsonPropertyName("password_version")]
+        public int password_version { get; set; } = 0;
         public bool IsActive { get; set; }
     }
 
