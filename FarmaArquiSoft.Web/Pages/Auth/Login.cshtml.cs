@@ -43,11 +43,22 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                     var content = await res.Content.ReadAsStringAsync();
                     if (string.IsNullOrWhiteSpace(content))
                     {
-                        ModelState.AddModelError(string.Empty, "Respuesta inv·lida del servidor.");
+                        ModelState.AddModelError(string.Empty, "Respuesta inv√°lida del servidor.");
                         return Page();
                     }
 
-                    try
+                    // Guardar JWT en cookie HttpOnly 
+                    var tokenOptions = new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = Request.IsHttps,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UtcNow.AddHours(8),
+                        Path = "/"
+                    };
+                    Response.Cookies.Append("AuthToken", auth.Token, tokenOptions);
+
+                    if (auth.User is not null)
                     {
                         using var doc = JsonDocument.Parse(content);
                         var root = doc.RootElement;
@@ -72,7 +83,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         if (root.TryGetProperty("user", out var userElem) && userElem.ValueKind == JsonValueKind.Object)
                             userElemNullable = userElem;
 
-                        // Si no hay user, quiz· la API devuelve usuario en otra propiedad; se queda null y seguiremos buscando en root.
+                        // Si no hay user, quiz√° la API devuelve usuario en otra propiedad; se queda null y seguiremos buscando en root.
                         if (userElemNullable.HasValue)
                         {
                             var ue = userElemNullable.Value;
@@ -106,7 +117,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         }
                         else
                         {
-                            // Intentar leer has_changed_password en la raÌz si la API lo devolviera ahÌ
+                            // Intentar leer has_changed_password en la ra√≠z si la API lo devolviera ah√≠
                             if (root.TryGetProperty("has_changed_password", out var hcpRoot))
                             {
                                 switch (hcpRoot.ValueKind)
@@ -141,9 +152,11 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         // Crear ClaimsPrincipal y hacer SignIn (cookie auth) para poblar User.Identity
                         var claims = new List<Claim>
                         {
-                            new Claim(ClaimTypes.NameIdentifier, string.IsNullOrWhiteSpace(userIdStr) ? "0" : userIdStr),
-                            new Claim(ClaimTypes.Name, username ?? ""),
-                            new Claim(ClaimTypes.Role, roleStr ?? "")
+                            new Claim(ClaimTypes.NameIdentifier, auth.User.id.ToString()),
+                            new Claim(ClaimTypes.Name, auth.User.username ?? ""),
+                            new Claim(ClaimTypes.Role, auth.User.role.ToString()),
+
+                            new Claim("access_token", auth.Token)
                         };
 
                         // Claim adicional para controlar cambio de password
@@ -160,7 +173,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
 
                         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-                        // Opcional: cookies legibles con datos p˙blicas
                         var publicOptions = new CookieOptions
                         {
                             HttpOnly = false,
@@ -175,7 +187,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         Response.Cookies.Append("Username", username ?? string.Empty, publicOptions);
                         Response.Cookies.Append("UserRole", roleStr ?? string.Empty, publicOptions);
 
-                        // Si es primera vez (no ha cambiado), obligar a cambiar contraseÒa
+                        // Si es primera vez (no ha cambiado), obligar a cambiar contrase√±a
                         if (!hasChangedPassword)
                         {
                             var forceOptions = new CookieOptions
@@ -187,16 +199,16 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                                 Path = "/"
                             };
                             Response.Cookies.Append("ForceChangePassword", "1", forceOptions);
-                            TempData["InfoMessage"] = "Debes cambiar tu contraseÒa antes de continuar.";
+                            TempData["InfoMessage"] = "Debes cambiar tu contrase√±a antes de continuar.";
                             return RedirectToPage("/Auth/ChangePassword");
                         }
 
-                        TempData["SuccessMessage"] = "AutenticaciÛn correcta.";
+                        TempData["SuccessMessage"] = "Autenticaci√≥n correcta.";
                         return LocalRedirect(ReturnUrl);
                     }
                     catch (JsonException)
                     {
-                        ModelState.AddModelError(string.Empty, "Respuesta JSON inv·lida del servidor.");
+                        ModelState.AddModelError(string.Empty, "Respuesta JSON inv√°lida del servidor.");
                         return Page();
                     }
                 }
@@ -204,7 +216,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                 if (res.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     var content = await res.Content.ReadAsStringAsync();
-                    ModelState.AddModelError(string.Empty, !string.IsNullOrWhiteSpace(content) ? content : "Usuario o contraseÒa incorrectos.");
+                    ModelState.AddModelError(string.Empty, !string.IsNullOrWhiteSpace(content) ? content : "Usuario o contrase√±a incorrectos.");
                     return Page();
                 }
 
@@ -214,7 +226,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             }
             catch (HttpRequestException ex)
             {
-                ModelState.AddModelError(string.Empty, $"Error de conexiÛn con el API: {ex.Message}");
+                ModelState.AddModelError(string.Empty, $"Error de conexi√≥n con el API: {ex.Message}");
                 return Page();
             }
             catch (Exception ex)
