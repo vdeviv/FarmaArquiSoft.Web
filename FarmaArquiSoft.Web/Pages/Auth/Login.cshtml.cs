@@ -47,7 +47,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         return Page();
                     }
 
-                    // Guardar JWT (opcional) en cookie HttpOnly
+                    // Guardar JWT en cookie HttpOnly 
                     var tokenOptions = new CookieOptions
                     {
                         HttpOnly = true,
@@ -58,14 +58,15 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                     };
                     Response.Cookies.Append("AuthToken", auth.Token, tokenOptions);
 
-                    // Crear ClaimsPrincipal y hacer SignIn (cookie auth) para poblar User.Identity
                     if (auth.User is not null)
                     {
                         var claims = new List<Claim>
                         {
                             new Claim(ClaimTypes.NameIdentifier, auth.User.id.ToString()),
                             new Claim(ClaimTypes.Name, auth.User.username ?? ""),
-                            new Claim(ClaimTypes.Role, auth.User.role.ToString())
+                            new Claim(ClaimTypes.Role, auth.User.role.ToString()),
+
+                            new Claim("access_token", auth.Token)
                         };
 
                         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -79,7 +80,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
 
                         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-                        // Opcional: cookies legibles con datos públicos
                         var publicOptions = new CookieOptions
                         {
                             HttpOnly = false,

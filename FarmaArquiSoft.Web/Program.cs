@@ -31,6 +31,7 @@ builder.Services.AddScoped<LotApi>();
 builder.Services.AddScoped<UserApi>();
 builder.Services.AddScoped<ClientApi>();
 builder.Services.AddScoped<ProviderApi>();
+builder.Services.AddScoped<AuthApi>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
