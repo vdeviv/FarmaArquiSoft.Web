@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 
 namespace FarmaArquiSoft.Web.Pages.Auth
 {
@@ -38,6 +40,21 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(idStr, out int userId)) return Forbid();
 
+            // Comprobaciones rápidas antes de llamar al API
+            var token = GetAccessTokenFromUserOrCookie();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                // Token no disponible: pedir re-login
+                TempData["ErrorMessage"] = "No se encontró token de autenticación. Vuelve a iniciar sesión.";
+                return RedirectToPage("/Auth/Login");
+            }
+
+            if (IsJwtExpired(token))
+            {
+                TempData["ErrorMessage"] = "El token ha expirado. Vuelve a iniciar sesión.";
+                return RedirectToPage("/Auth/Login");
+            }
+
             try
             {
                 // 1. Llamada al API
@@ -53,9 +70,24 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                     return RedirectToPage("/Index");
                 }
 
-                // Manejo de errores del API
+                // Manejo específico de 401 para diagnosticar
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    // Posibles causas: token inválido/expirado, actor mismatch, o current password incorrecta según implementación del API
+                    ModelState.AddModelError(string.Empty, $"No autorizado: {(!string.IsNullOrWhiteSpace(errorBody) ? errorBody : "token inválido o contraseña actual incorrecta")}");
+                    return Page();
+                }
+
+                // Otros errores del API
                 var errorMsg = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, $"Error: {errorMsg}"); // Simplificado, puedes parsear el JSON si quieres
+                ModelState.AddModelError(string.Empty, $"Error del servidor: {errorMsg}");
+                return Page();
+            }
+            catch (InvalidOperationException invEx)
+            {
+                // ApplyAuthHeaders puede lanzar InvalidOperationException si falta HttpContext o token
+                ModelState.AddModelError(string.Empty, $"Error de autenticación interna: {invEx.Message}");
                 return Page();
             }
             catch (Exception ex)
@@ -88,6 +120,45 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+        }
+
+        // Obtener token desde claim "access_token" o desde cookie "AuthToken"
+        private string? GetAccessTokenFromUserOrCookie()
+        {
+            var token = User.FindFirst("access_token")?.Value;
+            if (!string.IsNullOrWhiteSpace(token)) return token;
+
+            if (Request.Cookies.TryGetValue("AuthToken", out var cookieToken) && !string.IsNullOrWhiteSpace(cookieToken))
+                return cookieToken;
+
+            return null;
+        }
+
+        // Chequeo simple de expiración del JWT (no valida firma)
+        private bool IsJwtExpired(string token)
+        {
+            try
+            {
+                var parts = token.Split('.');
+                if (parts.Length < 2) return false;
+                var payload = parts[1];
+                // corregir padding Base64
+                var mod = payload.Length % 4;
+                if (mod != 0) payload += new string('=', 4 - mod);
+                var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("exp", out var expEl) && expEl.ValueKind == JsonValueKind.Number)
+                {
+                    var exp = expEl.GetInt64();
+                    var expDt = DateTimeOffset.FromUnixTimeSeconds(exp);
+                    return expDt <= DateTimeOffset.UtcNow;
+                }
+            }
+            catch
+            {
+                // Si falla el parseo, no asumimos expirado aquí
+            }
+            return false;
         }
 
         public class ChangePasswordInputModel
