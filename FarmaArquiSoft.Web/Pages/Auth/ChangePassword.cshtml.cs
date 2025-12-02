@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -16,6 +17,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
     {
         private readonly UserApi _userApi;
 
+        // Ya no inyectamos IApiErrorAdapter, solo el UserApi
         public ChangePasswordModel(UserApi userApi)
         {
             _userApi = userApi;
@@ -40,11 +42,10 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(idStr, out int userId)) return Forbid();
 
-            // Comprobaciones rápidas antes de llamar al API
+            // Comprobaciones de Token
             var token = GetAccessTokenFromUserOrCookie();
             if (string.IsNullOrWhiteSpace(token))
             {
-                // Token no disponible: pedir re-login
                 TempData["ErrorMessage"] = "No se encontró token de autenticación. Vuelve a iniciar sesión.";
                 return RedirectToPage("/Auth/Login");
             }
@@ -62,19 +63,51 @@ namespace FarmaArquiSoft.Web.Pages.Auth
 
                 if (response.IsSuccessStatusCode)
                 {
-                    // 2. IMPORTANTE: Actualizar la Cookie para que el Middleware sepa que ya cambió la contraseña
-                    // Si no hacemos esto, el middleware lo seguirá redirigiendo aquí.
                     await UpdateUserClaimsAsync();
-
                     TempData["SuccessMessage"] = "Contraseña actualizada correctamente.";
                     return RedirectToPage("/Index");
                 }
 
-                // Manejo específico de 401 para diagnosticar
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                // 2. USO DE ApiValidationFacade (Estático)
+                if (response.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    var jsonContent = await response.Content.ReadAsStringAsync();
+
+                    // TRUCO: Reutilizamos los parámetros de 'mail' e 'id' del Facade 
+                    // para mapear errores de 'CurrentPassword' y 'NewPassword' respectivamente.
+                    ApiValidationFacade.MapValidationErrors(
+                        modelState: ModelState,
+                        jsonContent: jsonContent,
+                        prefix: "Input",
+                        fieldMap: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["CurrentPassword"] = "CurrentPassword",
+                            ["NewPassword"] = "NewPassword",
+                            ["ConfirmPassword"] = "ConfirmPassword"
+                        },
+                        // Usamos el espacio de "Mail" para mapear errores de la contraseña ACTUAL
+                        mailPropertyName: "CurrentPassword",
+
+                        // Usamos el espacio de "ID" (CI) para mapear errores de la NUEVA contraseña
+                        idPropertyName: "NewPassword",
+
+                        // Keywords para detectar errores de la contraseña actual
+                        mailKeywords: new[] { "actual", "incorrecta", "vieja", "no coincide" },
+
+                        // Keywords para detectar errores de complejidad en la nueva contraseña
+                        idKeywords: new[] {
+                            "contraseña", "password", "longitud", "caracteres",
+                            "mayúscula", "minúscula", "número", "símbolo"
+                        }
+                    );
+
+                    return Page();
+                }
+
+                // Manejo específico de 401
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
-                    // Posibles causas: token inválido/expirado, actor mismatch, o current password incorrecta según implementación del API
                     ModelState.AddModelError(string.Empty, $"No autorizado: {(!string.IsNullOrWhiteSpace(errorBody) ? errorBody : "token inválido o contraseña actual incorrecta")}");
                     return Page();
                 }
@@ -86,7 +119,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             }
             catch (InvalidOperationException invEx)
             {
-                // ApplyAuthHeaders puede lanzar InvalidOperationException si falta HttpContext o token
                 ModelState.AddModelError(string.Empty, $"Error de autenticación interna: {invEx.Message}");
                 return Page();
             }
@@ -99,19 +131,15 @@ namespace FarmaArquiSoft.Web.Pages.Auth
 
         private async Task UpdateUserClaimsAsync()
         {
-            // Clonamos los claims actuales
             var currentIdentity = User.Identity as ClaimsIdentity;
             if (currentIdentity == null) return;
 
-            // Removemos el claim viejo de HasChangedPassword
             var existingClaim = currentIdentity.FindFirst("HasChangedPassword");
             if (existingClaim != null)
                 currentIdentity.RemoveClaim(existingClaim);
 
-            // Agregamos el nuevo en 'true'
             currentIdentity.AddClaim(new Claim("HasChangedPassword", "true"));
 
-            // Regeneramos la cookie
             var principal = new ClaimsPrincipal(currentIdentity);
             var authProperties = new AuthenticationProperties
             {
@@ -122,7 +150,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
         }
 
-        // Obtener token desde claim "access_token" o desde cookie "AuthToken"
         private string? GetAccessTokenFromUserOrCookie()
         {
             var token = User.FindFirst("access_token")?.Value;
@@ -134,7 +161,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             return null;
         }
 
-        // Chequeo simple de expiración del JWT (no valida firma)
         private bool IsJwtExpired(string token)
         {
             try
@@ -142,7 +168,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                 var parts = token.Split('.');
                 if (parts.Length < 2) return false;
                 var payload = parts[1];
-                // corregir padding Base64
                 var mod = payload.Length % 4;
                 if (mod != 0) payload += new string('=', 4 - mod);
                 var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
@@ -154,10 +179,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                     return expDt <= DateTimeOffset.UtcNow;
                 }
             }
-            catch
-            {
-                // Si falla el parseo, no asumimos expirado aquí
-            }
+            catch { }
             return false;
         }
 
@@ -167,7 +189,6 @@ namespace FarmaArquiSoft.Web.Pages.Auth
             public string CurrentPassword { get; set; } = "";
 
             [Required(ErrorMessage = "La nueva contraseña es requerida.")]
-            [MinLength(8, ErrorMessage = "Mínimo 8 caracteres.")]
             public string NewPassword { get; set; } = "";
 
             [Required(ErrorMessage = "Debes confirmar la contraseña.")]

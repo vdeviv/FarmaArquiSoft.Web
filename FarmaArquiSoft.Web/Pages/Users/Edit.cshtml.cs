@@ -25,13 +25,13 @@ namespace FarmaArquiSoft.Web.Pages.Users
 
         // Nuevos campos para el CI dividido
         [BindProperty]
-        public string CiPrefix { get; set; } = string.Empty;
+        public string? CiPrefix { get; set; } = string.Empty;
 
         [BindProperty]
-        public string CiNumber { get; set; } = string.Empty;
+        public string? CiNumber { get; set; } = string.Empty;
 
         [BindProperty]
-        public string CiSuffix { get; set; } = string.Empty;
+        public string? CiSuffix { get; set; } = string.Empty;
 
         public async Task<IActionResult> OnGetAsync(int id)
         {

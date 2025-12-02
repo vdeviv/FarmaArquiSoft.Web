@@ -1,5 +1,4 @@
-﻿﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -7,37 +6,89 @@
     <title>@ViewData["Title"] - FarmaPlus</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    @* Agregamos site.css para mantener consistencia de fuentes y estilos base *@
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body>
-    <main>
-        @RenderBody()
+<body class="bg-light">
+    @* CORRECCIÓN VISUAL:
+       1. 'min-vh-100': Fuerza a que ocupe todo el alto de la pantalla.
+       2. 'd-flex align-items-center': Centra el contenido verticalmente.
+       3. 'py-5': Da un poco de aire arriba y abajo en móviles.
+    *@
+    <main class="d-flex align-items-center min-vh-100 py-5">
+        <div class="container">
+            @* Aquí se renderiza tu Login o ChangePassword centrado *@
+            @RenderBody()
+        </div>
     </main>
+
+    @* --- MODAL GLOBAL (Copiado de _Layout para consistencia) --- *@
+    <div class="modal fade" id="globalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4 rounded-4 shadow-lg border-0">
+                <div id="modalIcon" class="mb-3 display-4"></div>
+                <h4 id="modalTitle" class="fw-bold mb-2"></h4>
+                <p id="modalMessage" class="text-muted mb-0"></p>
+            </div>
+        </div>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
-
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 
-    @* Reutilizamos tu script de modales si hay TempData *@
+    @* --- SCRIPTS PARA MANEJO DE MENSAJES (Igual que en _Layout) --- *@
+    <script>
+        function showModal(message, type = "success") {
+            const modalEl = document.getElementById('globalModal');
+            if(!modalEl) return; // Protección por si acaso
+
+            const modalTitle = document.getElementById("modalTitle");
+            const modalMessage = document.getElementById("modalMessage");
+            const modalIcon = document.getElementById("modalIcon");
+            const modal = new bootstrap.Modal(modalEl);
+
+            if (type === "success") {
+                modalTitle.textContent = "¡Operación Exitosa!";
+                modalIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success animate__animated animate__zoomIn"></i>';
+            } else if (type === "error") {
+                modalTitle.textContent = "Error";
+                modalIcon.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger animate__animated animate__shakeX"></i>';
+            } else if (type === "warning") {
+                modalTitle.textContent = "Atención";
+                modalIcon.innerHTML = '<i class="bi bi-exclamation-circle-fill text-warning animate__animated animate__bounceIn"></i>';
+            }
+
+            modalMessage.textContent = message;
+            modal.show();
+        }
+    </script>
+
+    @* Manejo automático de TempData *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                showModal("@TempData["SuccessMessage"]", "success");
+            });
+        </script>
+    }
+
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
-            <div class="toast show bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <strong class="me-auto">Error</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    @TempData["ErrorMessage"]
-                </div>
-            </div>
-        </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                showModal("@TempData["ErrorMessage"]", "error");
+            });
+        </script>
     }
 </body>
 </html>
