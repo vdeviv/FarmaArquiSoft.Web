@@ -17,16 +17,19 @@ namespace FarmaArquiSoft.Web.DTOs
         [JsonPropertyName("username")]
         public string username { get; set; } = "";
 
+        // Coincide con tu JSON: "firstName"
         [JsonPropertyName("firstName")]
         public string first_name { get; set; } = "";
 
+        // Coincide con tu JSON: "lastFirstName"
         [JsonPropertyName("lastFirstName")]
         public string last_first_name { get; set; } = "";
 
+        // Coincide con tu JSON: "lastSecondName"
         [JsonPropertyName("lastSecondName")]
         public string last_second_name { get; set; } = "";
 
-        [JsonPropertyName("mail")]      
+        [JsonPropertyName("mail")]
         public string? mail { get; set; }
 
         [JsonPropertyName("phone")]
@@ -38,11 +41,15 @@ namespace FarmaArquiSoft.Web.DTOs
         [JsonPropertyName("role")]
         public UserRole role { get; set; }
 
-        [JsonPropertyName("has_changed_password")]
-        public bool has_changed_password { get; set; } = true;
+        [JsonPropertyName("hasChangedPassword")]
+        public bool has_changed_password { get; set; }
 
-        [JsonPropertyName("password_version")]
+        [JsonPropertyName("passwordVersion")]
         public int password_version { get; set; } = 0;
+
+        [JsonPropertyName("lastPasswordChangedAt")]
+        public DateTime? last_password_changed_at { get; set; }
+
         public bool IsActive { get; set; }
     }
 
