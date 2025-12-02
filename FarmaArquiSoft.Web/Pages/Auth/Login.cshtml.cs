@@ -58,7 +58,7 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                     };
                     Response.Cookies.Append("AuthToken", auth.Token, tokenOptions);
 
-                    // Crear ClaimsPrincipal y hacer SignIn (cookie auth) para poblar User.Identity
+                    // Crear ClaimsPrincipal y hacer SignIn
                     if (auth.User is not null)
                     {
                         var claims = new List<Claim>
@@ -66,9 +66,12 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                             new Claim(ClaimTypes.NameIdentifier, auth.User.id.ToString()),
                             new Claim(ClaimTypes.Name, auth.User.username ?? ""),
                             new Claim(ClaimTypes.Role, auth.User.role.ToString()),
+                            new Claim("access_token", auth.Token),
 
-                            // 👉 Guardamos también el JWT en las claims (por si queremos usarlo ahí)
-                            new Claim("access_token", auth.Token)
+                            // -----------------------------------------------------------
+                            // 👇 NUEVO: Claim vital para el Middleware de seguridad
+                            // -----------------------------------------------------------
+                            new Claim("HasChangedPassword", auth.User.has_changed_password ? "true" : "false")
                         };
 
                         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -95,6 +98,14 @@ namespace FarmaArquiSoft.Web.Pages.Auth
                         Response.Cookies.Append("UserId", auth.User.id.ToString(), publicOptions);
                         Response.Cookies.Append("Username", auth.User.username ?? string.Empty, publicOptions);
                         Response.Cookies.Append("UserRole", auth.User.role.ToString(), publicOptions);
+
+                        // -----------------------------------------------------------
+                        // 👇 NUEVO: Si debe cambiar contraseña, redirigir AHORA
+                        // -----------------------------------------------------------
+                        if (!auth.User.has_changed_password)
+                        {
+                            return RedirectToPage("/Auth/ChangePassword");
+                        }
                     }
 
                     TempData["SuccessMessage"] = "Autenticación correcta.";

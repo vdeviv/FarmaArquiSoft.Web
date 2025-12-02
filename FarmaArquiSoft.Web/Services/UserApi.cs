@@ -118,5 +118,12 @@ namespace FarmaArquiSoft.Web.Services
             ApplyAuthHeaders();
             return await _http.DeleteAsync($"/api/user/{id}");
         }
+
+        public async Task<HttpResponseMessage> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+        {
+            ApplyAuthHeaders();
+            var payload = new { CurrentPassword = currentPassword, NewPassword = newPassword };
+            return await _http.PostAsJsonAsync($"/api/user/{userId}/change-password", payload);
+        }
     }
 }

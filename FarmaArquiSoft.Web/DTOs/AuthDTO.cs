@@ -12,7 +12,7 @@ namespace FarmaArquiSoft.Web.DTOs
     public class AuthenticateResponseDTO
     {
         public string Token { get; set; } = string.Empty;
-        public UserListItemDto? User { get; set; }
+        public UserDTO? User { get; set; }
     }
 
     // Petición para cambiar contraseña

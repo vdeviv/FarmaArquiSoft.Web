@@ -6,39 +6,45 @@
     <title>@ViewData["Title"] - FarmaPlus</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Farmacia_Arqui_Soft.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
+<body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
 
-<body>
-    <main>
+    <main class="w-100" style="max-width: 450px; padding: 15px;">
+        <div class="text-center mb-4">
+            <img src="~/images/LogoOficial.png" alt="Logo FarmaPlus" style="height: 80px;" class="animate__animated animate__fadeInDown" />
+            <h3 class="fw-bold text-success mt-2">FarmaPlus</h3>
+        </div>
+
         @RenderBody()
+
+        <div class="text-center mt-4 text-muted small">
+            &copy; 2025 - FarmaPlus Sistema de Gestión
+        </div>
     </main>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
-
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <script>
-        (function(){
-            function getCookie(name) {
-                const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-                return v ? v.pop() : '';
-            }
-            try {
-                const force = getCookie("ForceChangePassword");
-                const path = window.location.pathname.toLowerCase();
-                if (force === "1" && path !== "/auth/changepassword") {
-                    window.location.href = "/Auth/ChangePassword";
-                }
-            } catch (e) {  }
-        })();
-    </script>
-
     @await RenderSectionAsync("Scripts", required: false)
+
+    @* Reutilizamos tu script de modales si hay TempData *@
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+            <div class="toast show bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">Error</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    @TempData["ErrorMessage"]
+                </div>
+            </div>
+        </div>
+    }
 </body>
 </html>
