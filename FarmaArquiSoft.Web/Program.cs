@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,6 +73,23 @@ app.Use(async (context, next) =>
 
         if (user?.Identity?.IsAuthenticated == true)
         {
+            // 1) Intentar obtener token (claim o cookie)
+            var token = user.FindFirst("access_token")?.Value;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                context.Request.Cookies.TryGetValue("AuthToken", out token);
+            }
+
+            // 2) Si el JWT está expirado, invalidamos la cookie de autenticación y forzamos login
+            if (!string.IsNullOrWhiteSpace(token) && IsJwtExpired(token))
+            {
+                await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                // opcional: limpiar cookie de token
+                context.Response.Cookies.Delete("AuthToken");
+                context.Response.Redirect("/Auth/Login");
+                return;
+            }
+
             var hasChanged = user.FindFirst("HasChangedPassword")?.Value;
             var forceCookie = context.Request.Cookies["ForceChangePassword"];
 
@@ -80,6 +99,7 @@ app.Use(async (context, next) =>
                 {
                     "/Auth/ChangePassword",
                     "/Auth/Logout",
+                    "/Auth/Login",    // <-- permitir re-login
                     "/lib",
                     "/css",
                     "/js",
@@ -111,6 +131,32 @@ app.Use(async (context, next) =>
     }
 
     await next();
+
+    // Helper local para comprobar expiración simple del JWT (solo verifica "exp" del payload, no firma)
+    static bool IsJwtExpired(string token)
+    {
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length < 2) return false;
+            var payload = parts[1];
+            var mod = payload.Length % 4;
+            if (mod != 0) payload += new string('=', 4 - mod);
+            var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("exp", out var expEl) && expEl.ValueKind == JsonValueKind.Number)
+            {
+                var exp = expEl.GetInt64();
+                var expDt = DateTimeOffset.FromUnixTimeSeconds(exp);
+                return expDt <= DateTimeOffset.UtcNow;
+            }
+        }
+        catch
+        {
+            // en caso de fallo no asumimos expirado
+        }
+        return false;
+    }
 });
 
 app.UseAuthorization();
