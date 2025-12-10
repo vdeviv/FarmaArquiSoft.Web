@@ -1,0 +1,104 @@
+@page
+@model FarmaArquiSoft.Web.Pages.Medicines.Index
+@{
+    ViewData["Title"] = "Gestión de Medicamentos";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <h2 class="fw-bold text-success mb-0">
+        <i class="bi bi-capsule me-2"></i> Gestión de Medicamentos
+    </h2>
+    <a asp-page="/Medicine/Create" class="btn btn-success shadow-sm rounded-pill px-4">
+        <i class="bi bi-plus-circle me-2"></i> Nuevo Medicamento
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0 text-center">
+            <thead class="table-success text-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Presentación</th>
+                    <th>Proveedor ID</th>
+                    <th>Lotes</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Medicines != null && Model.Medicines.Any())
+                {
+                    foreach (var m in Model.Medicines)
+                    {
+                        <tr>
+                            <td class="fw-bold">@m.Name</td>
+                            <td>@m.Presentation</td>
+                            <td><span class="badge bg-light text-dark border">ID: @m.ProviderId</span></td>
+                            <td>
+                                <span class="badge bg-info text-dark rounded-pill">
+                                    @(m.LinkedLots?.Count ?? 0) Lotes
+                                </span>
+                            </td>
+                            <td>
+                                @if (!m.IsDeleted)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success rounded-pill px-3">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary rounded-pill px-3">Eliminado</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a asp-page="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-warning px-3 rounded-pill" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger px-3 rounded-pill"
+                                            onclick="openDeleteModal(@m.Id, '@m.Name')">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No hay medicamentos registrados.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<partial name="_DeleteMedicineModalPartial" />
+
+@section Scripts {
+    <script>
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteMedicineModal'));
+        function openDeleteModal(id, name) {
+            document.getElementById('deleteId').value = id;
+            document.getElementById('deleteMsg').textContent = `¿Eliminar "${name}"?`;
+            deleteModal.show();
+        }
+    </script>
+}
