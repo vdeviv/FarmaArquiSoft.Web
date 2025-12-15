@@ -1,0 +1,140 @@
+@page
+@model FarmaArquiSoft.Web.Pages.Sales.CreateModel
+@{
+    ViewData["Title"] = "Registro de Venta";
+}
+
+<h2 class="mb-4 text-center">REGISTRO DE VENTA</h2>
+
+<form method="post">
+
+    <!-- DATOS AUTOMÁTICOS -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Fecha:</strong> @Model.Fecha.ToString("dd/MM/yyyy")
+                </div>
+                <div class="col-md-6 text-end">
+                    <strong>Usuario:</strong> @Model.Usuario
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLIENTE -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Cliente</h5>
+
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <input asp-for="ClientId"
+                           class="form-control"
+                           placeholder="Seleccione un cliente"
+                           readonly />
+                </div>
+
+                <div class="col-md-2">
+                    <a asp-page="/Client/Index"
+                       class="btn btn-outline-primary w-100">
+                        Buscar
+                    </a>
+                </div>
+
+                <div class="col-md-2">
+                    <a asp-page="/Client/Create"
+                       class="btn btn-outline-success w-100">
+                        Nuevo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCTO -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Producto a agregar</h5>
+
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <input class="form-control"
+                           placeholder="Seleccione un medicamento"
+                           readonly />
+                </div>
+
+                <div class="col-md-2">
+                    <a asp-page="/Medicine/Index"
+                       class="btn btn-outline-primary w-100">
+                        Buscar
+                    </a>
+                </div>
+
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" disabled>
+                        +
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETALLE -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Detalle de Venta</h5>
+
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descripción</th>
+                        <th style="width:120px">Cantidad</th>
+                        <th>Precio</th>
+                        <th>Importe</th>
+                        <th style="width:80px">Opción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var i in Model.Items)
+                {
+                    <tr>
+                        <td>@i.MedName</td>
+                        <td>
+                            <input type="number"
+                                   value="@i.Quantity"
+                                   class="form-control form-control-sm" />
+                        </td>
+                        <td>@i.Price</td>
+                        <td>@i.SubTotal</td>
+                        <td class="text-center">
+                            <button asp-page-handler="RemoveItem"
+                                    asp-route-medId="@i.MedId"
+                                    class="btn btn-danger btn-sm">
+                                ✕
+                            </button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="card mb-3">
+        <div class="card-body text-end">
+            <h4>Total Bs.: <strong>@Model.Total</strong></h4>
+        </div>
+    </div>
+
+    <!-- GUARDAR -->
+    <div class="text-center">
+        <button type="submit"
+                onclick="return confirm('¿Desea registrar la venta?')"
+                class="btn btn-primary px-5">
+            Guardar
+        </button>
+    </div>
+
+</form>

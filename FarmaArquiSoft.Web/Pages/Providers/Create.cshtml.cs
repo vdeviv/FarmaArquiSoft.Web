@@ -56,25 +56,25 @@ namespace FarmaArquiSoft.Web.Pages.Providers
                         mailPropertyName: "email",
                         idPropertyName: "phone",
                         mailKeywords: new[] { "correo", "mail", "email" },
-                        idKeywords: new[] { "telefono", "teléfono", "phone", "celular" }
+                        idKeywords: new[] { "telefono", "telï¿½fono", "phone", "celular" }
                     );
 
                     return Page();
                 }
 
                 ModelState.AddModelError(string.Empty,
-                    $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
+                    $"Error inesperado del API. Cï¿½digo: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
                 return Page();
             }
             catch (HttpRequestException ex)
             {
                 ModelState.AddModelError(string.Empty,
-                    $"Error de conexión con el API de Proveedores: {ex.Message}. Verifica que el microservicio de Proveedores esté en ejecución y la BaseAddress sea correcta.");
+                    $"Error de conexiï¿½n con el API de Proveedores: {ex.Message}. Verifica que el microservicio de Proveedores estï¿½ en ejecuciï¿½n y la BaseAddress sea correcta.");
                 return Page();
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, $"Ocurrió un error inesperado: {ex.Message}");
+                ModelState.AddModelError(string.Empty, $"Ocurrio un error inesperado: {ex.Message}");
                 return Page();
             }
         }
