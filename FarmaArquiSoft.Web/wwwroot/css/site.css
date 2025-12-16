@@ -341,3 +341,67 @@ footer {
         padding: 0.5rem;
     }
 }
+
+.sales-form input.form-control {
+    background-color: #f1f7f4;
+    color: var(--gray-dark);
+    border: 1px solid var(--accent);
+    font-weight: 500;
+}
+
+    .sales-form input.form-control::placeholder {
+        color: #7fae95;
+    }
+
+/* Inputs solo lectura (razón social) */
+.sales-form input[readonly] {
+    background-color: #e9f1ed;
+    color: #5c7f6a;
+    cursor: not-allowed;
+}
+
+/* Quitar focus azul de Bootstrap */
+.sales-form input:focus {
+    border-color: #66BB6A;
+    box-shadow: 0 0 0 0.15rem rgba(102, 187, 106, 0.25);
+}
+
+/* Botones de búsqueda (lupa) */
+.sales-form .input-group .btn {
+    border-color: #66BB6A;
+    color: #2E7D32;
+}
+
+    .sales-form .input-group .btn:hover {
+        background-color: #E8F5E9;
+        border-color: #43A047;
+        color: #1B5E20;
+    }
+
+/* Botón agregar (+) */
+.sales-form .btn-success {
+    background: linear-gradient(90deg, #66BB6A, #43A047);
+    border: none;
+}
+
+    .sales-form .btn-success:hover {
+        background: linear-gradient(90deg, #43A047, #2E7D32);
+    }
+
+/* Tabla detalle venta */
+.sales-form .table thead {
+    background-color: #D9FBE6;
+}
+
+.sales-form .table tbody tr:hover {
+    background-color: #f3fdf6;
+}
+
+.sales-form h2 {
+    color: var(--primary);
+    font-weight: 700;
+}
+.sales-form table td,
+.sales-form table th {
+    vertical-align: middle;
+}

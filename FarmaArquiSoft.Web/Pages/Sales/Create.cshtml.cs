@@ -10,20 +10,25 @@ namespace FarmaArquiSoft.Web.Pages.Sales
         public DateTime Fecha => DateTime.Now;
         public string Usuario => User.Identity?.Name ?? "usuario";
 
-        // ===== Cliente seleccionado =====
+        // ===== Buscadores =====
         [BindProperty]
-        public string ClientId { get; set; } = string.Empty;
+        public string ClientSearch { get; set; } = string.Empty;
 
-        // ===== Detalle temporal de venta =====
+        [BindProperty]
+        public string ClientName { get; set; } = string.Empty;
+
+        [BindProperty]
+        public string ProductSearch { get; set; } = string.Empty;
+
+        // ===== Detalle =====
         [BindProperty]
         public List<SaleItemTempDTO> Items { get; set; } = new();
 
-        // ===== Total =====
         public decimal Total => Items.Sum(i => i.SubTotal);
 
         public void OnGet()
         {
-            // Inicialización de la vista
+            // Inicialización
         }
 
         public IActionResult OnPostRemoveItem(string medId)
