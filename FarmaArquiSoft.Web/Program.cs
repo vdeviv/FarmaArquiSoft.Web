@@ -32,6 +32,11 @@ builder.Services.AddHttpClient("medicinesApi", c =>
 {
     c.BaseAddress = new Uri("http://localhost:5149"); 
 });
+builder.Services.AddHttpClient("SaleApi", c =>
+{
+    c.BaseAddress = new Uri("https://localhost:7005/");
+});
+
 
 
 builder.Services.AddScoped<MedicineApi>();
