@@ -9,30 +9,52 @@ namespace FarmaArquiSoft.Web.Pages.Lots
     public class IndexModel : PageModel
     {
         private readonly LotApi _lotApi;
+        private readonly MedicineApi _medicineApi; // 1. Inyectamos
 
         public List<LotDTO> Lots { get; private set; } = new();
 
-        public IndexModel(LotApi lotApi)
+        public IndexModel(LotApi lotApi, MedicineApi medicineApi)
         {
             _lotApi = lotApi;
+            _medicineApi = medicineApi;
         }
 
         public async Task OnGetAsync()
         {
             try
             {
-                Lots = await _lotApi.GetAllAsync();
-            }
-            catch (HttpRequestException ex)
-            {
-                TempData["ErrorMessage"] = $"Error de conexión al cargar lotes: {ex.Message}";
+                // 2. Carga paralela
+                var lotsTask = _lotApi.GetAllAsync();
+                var medicinesTask = _medicineApi.GetAllAsync();
+
+                await Task.WhenAll(lotsTask, medicinesTask);
+
+                Lots = await lotsTask;
+                var medicines = await medicinesTask;
+
+                // 3. Diccionario: ID Medicina -> Nombre + Presentación
+                var medDict = medicines.ToDictionary(m => m.Id, m => $"{m.Name} ({m.Presentation})");
+
+                // 4. Mapeo
+                foreach (var lot in Lots)
+                {
+                    if (medDict.TryGetValue(lot.medicine_id, out var name))
+                    {
+                        lot.MedicineName = name;
+                    }
+                    else
+                    {
+                        lot.MedicineName = $"Medicina ID: {lot.medicine_id}";
+                    }
+                }
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Ocurrió un error inesperado al cargar lotes: {ex.Message}";
+                TempData["ErrorMessage"] = $"Error cargando datos: {ex.Message}";
             }
         }
 
+        // ... (El Delete sigue igual) ...
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {

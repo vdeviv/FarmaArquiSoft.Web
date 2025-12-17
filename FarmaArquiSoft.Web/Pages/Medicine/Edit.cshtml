@@ -14,7 +14,7 @@
         </div>
 
         <div class="card-body p-4">
-            <form method="post" id="editForm">
+            <form method="post">
                 <input type="hidden" asp-for="Medicine.Id" />
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
@@ -41,40 +41,6 @@
                     </div>
                 </div>
 
-                <hr class="my-4" />
-
-                <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-boxes me-2"></i>Lotes Asignados</h5>
-
-                <div class="row g-2 align-items-end mb-3">
-                    <div class="col-md-10">
-                        <select id="lotSelector" class="form-select rounded-pill">
-                            <option value="">-- Seleccione lote --</option>
-                            @foreach (var lot in Model.AvailableLots)
-                            {
-                                <option value="@lot.id" data-info="Lote: @lot.batch_number">
-                                    @lot.batch_number (Exp: @lot.expiration_date.ToShortDateString())
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="button" class="btn btn-primary w-100 rounded-pill" onclick="addLotFromSelector()">
-                            <i class="bi bi-plus-lg"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="table-responsive border rounded-3 p-2 bg-light">
-                    <table class="table table-sm mb-0">
-                        <tbody id="lotsTableBody">
-                            <tr id="noLotsRow">
-                                <td colspan="2" class="text-center text-muted small py-3">No hay lotes asignados</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="hiddenInputsContainer"></div>
-
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-warning text-dark px-4 rounded-pill shadow-sm">
                         <i class="bi bi-save me-2"></i>Guardar Cambios
@@ -90,71 +56,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
-    <script>
-        const addedLotIds = new Set();
-
-        // Función para agregar visualmente (se usa al cargar la página y al agregar nuevos)
-        function renderLotRow(id, text) {
-            if (addedLotIds.has(String(id))) return;
-
-            const noLotsRow = document.getElementById('noLotsRow');
-            if (noLotsRow) noLotsRow.style.display = 'none';
-
-            const tbody = document.getElementById('lotsTableBody');
-            const tr = document.createElement('tr');
-            tr.id = `row-lot-${id}`;
-            tr.innerHTML = `
-                <td>${text}</td>
-                <td class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeLot('${id}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-
-            const container = document.getElementById('hiddenInputsContainer');
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'SelectedLotIds';
-            input.value = id;
-            input.id = `input-lot-${id}`;
-            container.appendChild(input);
-
-            addedLotIds.add(String(id));
-        }
-
-        function addLotFromSelector() {
-            const selector = document.getElementById('lotSelector');
-            const selectedOption = selector.options[selector.selectedIndex];
-            const val = selectedOption.value;
-            const txt = selectedOption.getAttribute('data-info');
-            if(val) {
-                if(addedLotIds.has(val)) { alert('Ya agregado'); return; }
-                renderLotRow(val, txt);
-                selector.value = "";
-            }
-        }
-
-        function removeLot(id) {
-            document.getElementById(`row-lot-${id}`).remove();
-            document.getElementById(`input-lot-${id}`).remove();
-            addedLotIds.delete(String(id));
-            if (addedLotIds.size === 0) {
-                document.getElementById('noLotsRow').style.display = '';
-            }
-        }
-
-        // Cargar lotes iniciales (que vienen del servidor)
-        document.addEventListener("DOMContentLoaded", function() {
-            @foreach (var id in Model.SelectedLotIds)
-            {
-                    // Buscamos el texto en la lista de disponibles para que se vea bonito
-                    var lotInfo = Model.AvailableLots.FirstOrDefault(l => l.id == id);
-                    var text = lotInfo != null ? "Lote: " + lotInfo.batch_number : "Lote ID: " + id;
-                    <text>renderLotRow('@id', '@text');</text>
-            }
-        });
-    </script>
 }

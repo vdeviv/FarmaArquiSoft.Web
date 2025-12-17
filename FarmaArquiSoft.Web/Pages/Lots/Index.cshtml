@@ -1,6 +1,5 @@
 @page
 @model FarmaArquiSoft.Web.Pages.Lots.IndexModel
-
 @{
     ViewData["Title"] = "Gestión de Lotes";
 }
@@ -10,23 +9,23 @@
         <i class="bi bi-box-seam me-2"></i> Gestión de Lotes
     </h2>
 
-    <a asp-page="/Lots/Create" class="btn btn-success shadow-sm rounded-pill px-4 d-flex align-items-center">
+    <a asp-page="Create" class="btn btn-success shadow-sm rounded-pill px-4 d-flex align-items-center">
         <i class="bi bi-plus-circle me-2"></i> Nuevo Lote
     </a>
 </div>
 
-@if (TempData["SuccessMessage"] is string ok && !string.IsNullOrWhiteSpace(ok))
+@if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show shadow-sm">
-        <i class="bi bi-check-circle-fill me-2"></i> @ok
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-@if (TempData["ErrorMessage"] is string err && !string.IsNullOrWhiteSpace(err))
+@if (TempData["ErrorMessage"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show shadow-sm">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> @err
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
@@ -37,9 +36,10 @@
             <thead class="table-success text-dark">
                 <tr>
                     <th>Código de Lote</th>
-                    <th>Fecha de Vencimiento</th>
+                    <th>Medicamento</th>
+                    <th>Vencimiento</th>
                     <th>Cantidad</th>
-                    <th>Costo Unitario (Bs.)</th>
+                    <th>Costo Unit.</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -50,20 +50,56 @@
                     foreach (var lot in Model.Lots)
                     {
                         <tr>
-                            <td class="fw-semibold">@lot.batch_number</td>
-                            <td>@lot.expiration_date.ToString("dd/MM/yyyy")</td>
-                            <td>@lot.quantity</td>
-                            <td>@lot.unit_cost.ToString("F2")</td>
+                            <td class="fw-semibold font-monospace">@lot.batch_number</td>
+
+                            <td class="text-start">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-circle p-2 me-2 text-success">
+                                        <i class="bi bi-capsule"></i>
+                                    </div>
+                                    <div>
+                                        <span class="fw-bold d-block">@(lot.MedicineName ?? "Desconocido")</span>
+                                        <small class="text-muted">ID Med: @lot.medicine_id</small>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                @if (lot.expiration_date < DateTime.Now)
+                                {
+                                    <span class="text-danger fw-bold" title="Vencido">
+                                        <i class="bi bi-exclamation-circle-fill"></i> @lot.expiration_date.ToString("dd/MM/yyyy")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>@lot.expiration_date.ToString("dd/MM/yyyy")</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (lot.quantity < 10)
+                                {
+                                    <span class="badge bg-danger rounded-pill px-3" title="Stock Bajo">@lot.quantity</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary rounded-pill px-3">@lot.quantity</span>
+                                }
+                            </td>
+
+                            <td>Bs. @lot.unit_cost.ToString("F2")</td>
+
                             <td>
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a asp-page="/Lots/Edit" asp-route-id="@lot.id"
-                                       class="btn btn-sm btn-outline-warning px-3 rounded-pill">
+                                    <a asp-page="Edit" asp-route-id="@lot.id"
+                                       class="btn btn-sm btn-outline-warning px-3 rounded-pill" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
 
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger px-3 rounded-pill"
-                                            onclick="openDeleteModal('@lot.id', '@lot.batch_number')">
+                                            onclick="openDeleteModal('@lot.id', '@lot.batch_number')" title="Eliminar">
                                         <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>
@@ -74,7 +110,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
+                        <td colspan="6" class="text-center text-muted py-4">
                             <i class="bi bi-inbox me-2"></i> No hay lotes registrados.
                         </td>
                     </tr>
@@ -88,6 +124,7 @@
 
 @section Scripts {
     <script>
+        // Asegúrate de que el ID en el partial coincida con 'deleteModal'
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
 
         function openDeleteModal(id, batchNumber) {

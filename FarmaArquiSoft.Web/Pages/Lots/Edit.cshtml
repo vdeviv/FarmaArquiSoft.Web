@@ -74,6 +74,13 @@
                     </a>
                 </div>
 
+                <div class="col-md-12">
+                    <label asp-for="Input.medicine_id" class="form-label fw-semibold">Medicamento</label>
+                    <select asp-for="Input.medicine_id" class="form-select rounded-pill" asp-items="Model.MedicineOptions">
+                        <option value="">-- Seleccione --</option>
+                    </select>
+                </div>
+
             </form>
         </div>
     </div>

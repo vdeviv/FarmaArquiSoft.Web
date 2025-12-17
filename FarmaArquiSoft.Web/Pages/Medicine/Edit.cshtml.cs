@@ -11,23 +11,17 @@ namespace FarmaArquiSoft.Web.Pages.Medicines
     {
         private readonly MedicineApi _medicineApi;
         private readonly ProviderApi _providerApi;
-        private readonly LotApi _lotApi;
 
-        public Edit(MedicineApi medicineApi, ProviderApi providerApi, LotApi lotApi)
+        public Edit(MedicineApi medicineApi, ProviderApi providerApi)
         {
             _medicineApi = medicineApi;
             _providerApi = providerApi;
-            _lotApi = lotApi;
         }
 
         [BindProperty]
         public MedicineDTO Medicine { get; set; } = new();
 
         public List<SelectListItem> ProviderOptions { get; set; } = new();
-        public List<LotDTO> AvailableLots { get; set; } = new();
-
-        [BindProperty]
-        public List<int> SelectedLotIds { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -40,13 +34,6 @@ namespace FarmaArquiSoft.Web.Pages.Medicines
                     return RedirectToPage("Index");
                 }
                 Medicine = dto;
-
-                // Pre-cargar los lotes que ya tiene asignados para que el JS los pinte
-                if (Medicine.LinkedLots != null)
-                {
-                    SelectedLotIds = Medicine.LinkedLots.Select(l => l.LotId).ToList();
-                }
-
                 await LoadDependencies();
                 return Page();
             }
@@ -60,14 +47,6 @@ namespace FarmaArquiSoft.Web.Pages.Medicines
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostAsync()
         {
-            // Mapeo manual de la lista de IDs al objeto DTO
-            if (SelectedLotIds != null)
-            {
-                Medicine.LinkedLots = SelectedLotIds
-                    .Select(id => new MedicineLotLinkDTO { LotId = id, MedicineId = Medicine.Id })
-                    .ToList();
-            }
-
             if (!ModelState.IsValid)
             {
                 await LoadDependencies();
@@ -125,9 +104,6 @@ namespace FarmaArquiSoft.Web.Pages.Medicines
                 Value = p.id.ToString(),
                 Text = $"{p.first_name} {p.last_name}"
             }).ToList();
-
-            var lots = await _lotApi.GetAllAsync();
-            AvailableLots = lots.Where(l => !l.is_deleted).ToList();
         }
     }
 }

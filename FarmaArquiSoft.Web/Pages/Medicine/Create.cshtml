@@ -14,7 +14,7 @@
         </div>
 
         <div class="card-body p-4">
-            <form method="post" id="medicineForm">
+            <form method="post">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                 <div class="row g-3">
@@ -42,48 +42,6 @@
                     </div>
                 </div>
 
-                <hr class="my-4" />
-
-                <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-boxes me-2"></i>Asignación de Lotes</h5>
-
-                <div class="row g-2 align-items-end mb-3">
-                    <div class="col-md-10">
-                        <label class="form-label small text-muted">Lotes Disponibles</label>
-                        <select id="lotSelector" class="form-select rounded-pill">
-                            <option value="">-- Seleccione un lote para agregar --</option>
-                            @foreach (var lot in Model.AvailableLots)
-                            {
-                                <option value="@lot.id" data-info="Lote: @lot.batch_number | Vence: @lot.expiration_date.ToShortDateString()">
-                                    @lot.batch_number (Cant: @lot.quantity) - Vence: @lot.expiration_date.ToShortDateString()
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="button" class="btn btn-primary w-100 rounded-pill" onclick="addLot()">
-                            <i class="bi bi-plus-lg"></i> Agregar
-                        </button>
-                    </div>
-                </div>
-
-                <div class="table-responsive border rounded-3 p-2 bg-light">
-                    <table class="table table-sm mb-0" id="selectedLotsTable">
-                        <thead>
-                            <tr>
-                                <th>Información del Lote</th>
-                                <th class="text-end text-nowrap" style="width: 100px;">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lotsTableBody">
-                            <tr id="noLotsRow">
-                                <td colspan="2" class="text-center text-muted small py-3">No hay lotes asignados</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="hiddenInputsContainer"></div>
-
-
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-success px-4 rounded-pill shadow-sm">
                         <i class="bi bi-save me-2"></i>Guardar Medicamento
@@ -99,68 +57,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
-    <script>
-        const addedLotIds = new Set();
-
-        function addLot() {
-            const selector = document.getElementById('lotSelector');
-            const selectedOption = selector.options[selector.selectedIndex];
-            const lotId = selectedOption.value;
-            const lotText = selectedOption.getAttribute('data-info');
-
-            if (!lotId) return; // Si no seleccionó nada
-
-            if (addedLotIds.has(lotId)) {
-                alert('Este lote ya ha sido agregado.');
-                return;
-            }
-
-            // Quitar mensaje de "No hay lotes"
-            const noLotsRow = document.getElementById('noLotsRow');
-            if (noLotsRow) noLotsRow.style.display = 'none';
-
-            // Agregar visualmente a la tabla
-            const tbody = document.getElementById('lotsTableBody');
-            const tr = document.createElement('tr');
-            tr.id = `row-lot-${lotId}`;
-            tr.innerHTML = `
-                <td>${lotText}</td>
-                <td class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeLot('${lotId}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-
-            // Agregar Input Oculto para el Post
-            const container = document.getElementById('hiddenInputsContainer');
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'SelectedLotIds'; // Se bindeará a la propiedad List<int>
-            input.value = lotId;
-            input.id = `input-lot-${lotId}`;
-            container.appendChild(input);
-
-            addedLotIds.add(lotId);
-            selector.value = ""; // Resetear selector
-        }
-
-        function removeLot(id) {
-            // Remover fila visual
-            document.getElementById(`row-lot-${id}`).remove();
-
-            // Remover input oculto
-            document.getElementById(`input-lot-${id}`).remove();
-
-            addedLotIds.delete(id);
-
-            // Si no quedan lotes, mostrar mensaje vacío
-            if (addedLotIds.size === 0) {
-                const noLotsRow = document.getElementById('noLotsRow');
-                if (noLotsRow) noLotsRow.style.display = '';
-            }
-        }
-    </script>
 }
