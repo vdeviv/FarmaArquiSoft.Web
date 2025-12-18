@@ -10,12 +10,14 @@ namespace FarmaArquiSoft.Web.DTOs
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
+        // Aquí usamos el Enum que acabamos de crear
         [JsonPropertyName("presentation")]
         public MedicinePresentation Presentation { get; set; }
 
         [JsonPropertyName("provider_id")]
         public int ProviderId { get; set; }
 
+        // Propiedad Extra: Para mostrar el nombre del proveedor en la tabla (UI Composition)
         public string? ProviderName { get; set; }
 
         [JsonPropertyName("is_deleted")]
@@ -26,24 +28,5 @@ namespace FarmaArquiSoft.Web.DTOs
 
         [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
-
-        // Relación con Lotes
-        [JsonPropertyName("linkedLots")] // El backend lo envía como 'linkedLots' o 'LinkedLots'
-        public List<MedicineLotLinkDTO> LinkedLots { get; set; } = new();
-    }
-
-    public class MedicineLotLinkDTO
-    {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
-
-        [JsonPropertyName("medicine_id")]
-        public int MedicineId { get; set; }
-
-        [JsonPropertyName("lot_id")]
-        public int LotId { get; set; }
-
-        // Propiedad extra para MOSTRAR el número de lote en el Front (opcional)
-        public string? BatchNumber { get; set; }
     }
 }

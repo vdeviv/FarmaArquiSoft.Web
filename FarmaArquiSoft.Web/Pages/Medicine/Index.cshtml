@@ -8,7 +8,7 @@
     <h2 class="fw-bold text-success mb-0">
         <i class="bi bi-capsule me-2"></i> Gestión de Medicamentos
     </h2>
-    <a asp-page="/Medicine/Create" class="btn btn-success shadow-sm rounded-pill px-4">
+    <a asp-page="Create" class="btn btn-success shadow-sm rounded-pill px-4">
         <i class="bi bi-plus-circle me-2"></i> Nuevo Medicamento
     </a>
 </div>
@@ -20,13 +20,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show shadow-sm">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
 
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
@@ -35,8 +28,7 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Presentación</th>
-                    <th>Proveedor ID</th>
-                    <th>Lotes</th>
+                    <th>Proveedor</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -48,50 +40,40 @@
                     {
                         <tr>
                             <td class="fw-bold">@m.Name</td>
-                            <td>@m.Presentation</td>
-                            <td><span class="badge bg-light text-dark border">ID: @m.ProviderId</span></td>
+                            <td><span class="badge bg-light text-dark border">@m.Presentation</span></td>
                             <td>
-                                <span class="badge bg-info text-dark rounded-pill">
-                                    @(m.LinkedLots?.Count ?? 0) Lotes
-                                </span>
+                                <div class="fw-semibold text-dark">
+                                    <i class="bi bi-building me-1 text-success"></i>
+                                    @(m.ProviderName ?? "Desconocido")
+                                </div>
                             </td>
                             <td>
                                 @if (!m.IsDeleted)
                                 {
-                                    <span class="badge bg-success-subtle text-success border border-success rounded-pill px-3">Activo</span>
+                                    <span class="badge bg-success rounded-pill">Activo</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary rounded-pill px-3">Eliminado</span>
+
+                                    <span class="badge bg-secondary rounded-pill">Eliminado</span>
                                 }
                             </td>
                             <td>
-                                <div class="d-flex justify-content-center gap-2">
-                                    <a asp-page="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-warning px-3 rounded-pill" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger px-3 rounded-pill"
-                                            onclick="openDeleteModal(@m.Id, '@m.Name')">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                </div>
+                                <a asp-page="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-warning rounded-pill"><i class="bi bi-pencil"></i></a>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="openDeleteModal(@m.Id, '@m.Name')"><i class="bi bi-trash3"></i></button>
                             </td>
                         </tr>
                     }
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No hay medicamentos registrados.</td>
-                    </tr>
+                    <tr><td colspan="5" class="text-muted py-4">No hay datos.</td></tr>
                 }
             </tbody>
         </table>
     </div>
 </div>
-
 <partial name="_DeleteMedicineModalPartial" />
-
 @section Scripts {
     <script>
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteMedicineModal'));

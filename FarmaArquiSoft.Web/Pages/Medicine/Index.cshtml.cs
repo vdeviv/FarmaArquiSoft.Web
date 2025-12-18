@@ -7,8 +7,14 @@ namespace FarmaArquiSoft.Web.Pages.Medicines
 {
     public class Index : PageModel
     {
-        private readonly MedicineApi _api;
-        public Index(MedicineApi api) => _api = api;
+        private readonly MedicineApi _medicineApi;
+        private readonly ProviderApi _providerApi;
+
+        public Index(MedicineApi medicineApi, ProviderApi providerApi)
+        {
+            _medicineApi = medicineApi;
+            _providerApi = providerApi;
+        }
 
         public List<MedicineDTO> Medicines { get; private set; } = new();
 
@@ -16,27 +22,26 @@ namespace FarmaArquiSoft.Web.Pages.Medicines
         {
             try
             {
-                Medicines = await _api.GetAllAsync();
+                var tMeds = _medicineApi.GetAllAsync();
+                var tProvs = _providerApi.GetAllAsync();
+                await Task.WhenAll(tMeds, tProvs);
+
+                Medicines = await tMeds;
+                var providers = await tProvs;
+                var pDict = providers.ToDictionary(p => p.id, p => $"{p.first_name} {p.last_name}");
+
+                foreach (var m in Medicines)
+                {
+                    m.ProviderName = pDict.TryGetValue(m.ProviderId, out var name) ? name : "ID: " + m.ProviderId;
+                }
             }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error cargando lista: {ex.Message}";
-            }
+            catch (Exception ex) { TempData["ErrorMessage"] = ex.Message; }
         }
 
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
-            try
-            {
-                var res = await _api.DeleteAsync(id);
-                if (res.IsSuccessStatusCode) TempData["SuccessMessage"] = "Eliminado correctamente.";
-                else TempData["ErrorMessage"] = "No se pudo eliminar.";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error al eliminar: {ex.Message}";
-            }
+            await _medicineApi.DeleteAsync(id);
             return RedirectToPage();
         }
     }
