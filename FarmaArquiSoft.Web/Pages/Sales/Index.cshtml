@@ -1,26 +1,23 @@
 ﻿@page
 @model FarmaArquiSoft.Web.Pages.Sales.IndexModel
 @{
-    ViewData["Title"] = "Ventas";
+    ViewData["Title"] = "Historial de Ventas";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-success">
-        <i class="bi bi-receipt me-2"></i> Registro de Ventas
+        <i class="bi bi-receipt me-2"></i> Historial de Ventas
     </h2>
-    <a asp-page="Create" class="btn btn-success rounded-pill px-4">
-        <i class="bi bi-plus-circle me-2"></i> Nueva Venta
-    </a>
 </div>
 
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
-        <table class="table table-hover align-middle text-center mb-0">
+        <table class="table table-hover align-middle mb-0 text-center">
             <thead class="table-success">
                 <tr>
                     <th>Fecha</th>
                     <th>Cliente</th>
-                    <th>Total (Bs.)</th>
+                    <th>Total (Bs)</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -30,33 +27,28 @@
                 {
                     foreach (var s in Model.Sales)
                     {
-                        <tr class="@(s.Status == "ANULADA" ? "table-secondary text-muted" : "")">
-                            <td>@s.Date.ToShortDateString()</td>
-                            <td>@(s.ClientName ?? s.ClientId)</td>
-                            <td>Bs. @s.TotalAmount.ToString("F2")</td>
+                        <tr class="@(s.Status == "CANCELLED" ? "table-secondary" : "")">
+                            <td>@s.Date.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@s.ClientId</td>
+                            <td class="fw-bold">Bs. @s.TotalAmount.ToString("F2")</td>
                             <td>
-                                <span class="badge @(s.Status == "ACTIVA" ? "bg-success" : "bg-danger")">
+                                <span class="badge rounded-pill
+                                            @(s.Status == "ACTIVE" ? "bg-success" : "bg-danger")">
                                     @s.Status
                                 </span>
                             </td>
                             <td>
-                                <!-- Ver Detalle -->
-                                <button class="btn btn-sm btn-outline-primary"
+                                <button class="btn btn-sm btn-outline-primary rounded-pill"
                                         onclick="openDetail('@s.Id')">
                                     <i class="bi bi-eye"></i>
                                 </button>
 
-                                <!-- Anular -->
-                                @if (s.Status == "ACTIVA")
+                                @if (s.Status == "ACTIVE")
                                 {
-                                    <form method="post"
-                                          asp-page-handler="ToggleStatus"
-                                          asp-route-saleId="@s.Id"
-                                          class="d-inline">
-                                        <button class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </form>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill"
+                                            onclick="cancelSale('@s.Id')">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
                                 }
                             </td>
                         </tr>
@@ -65,7 +57,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="5" class="py-4 text-muted">
+                        <td colspan="5" class="text-muted py-4">
                             No hay ventas registradas.
                         </td>
                     </tr>
@@ -79,29 +71,16 @@
 
 @section Scripts {
     <script>
-        async function openDetail(saleId) {
-            const res = await fetch(`?handler=Details&saleId=${saleId}`);
-            const data = await res.json();
-
-            let html = "";
-            let total = 0;
-
-            data.forEach(d => {
-                total += d.totalAmount;
-                html += `
-                    <tr>
-                        <td>${d.medicineName}</td>
-                        <td>${d.quantity}</td>
-                        <td>Bs. ${d.unitPrice.toFixed(2)}</td>
-                        <td>Bs. ${d.totalAmount.toFixed(2)}</td>
-                    </tr>`;
-            });
-
-            document.getElementById("detailBody").innerHTML = html;
-            document.getElementById("detailTotal").innerText =
-                "Bs. " + total.toFixed(2);
-
+        function openDetail(id) {
+            // aquí luego llamas /api/sales/{id}/details
+            console.log("Detalle venta", id);
             new bootstrap.Modal('#saleDetailModal').show();
+        }
+
+        function cancelSale(id) {
+            if (!confirm("¿Anular esta venta?")) return;
+            console.log("Cancelar venta", id);
+            // PATCH /api/sales/{id}/cancel
         }
     </script>
 }
