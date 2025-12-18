@@ -71,16 +71,101 @@
 
 @section Scripts {
     <script>
-        function openDetail(id) {
-            // aquí luego llamas /api/sales/{id}/details
-            console.log("Detalle venta", id);
-            new bootstrap.Modal('#saleDetailModal').show();
+        // ------------------------------------------------------------------
+        // CONFIGURACIÓN: Backend for Frontend
+        // Ahora llamamos al Handler C# de esta misma página, no al puerto 5002.
+        // Esto soluciona los errores de CORS, SSL y Autenticación.
+        // ------------------------------------------------------------------
+        const PAGE_HANDLER_URL = "?handler=SaleDetails&id=";
+
+        // Formateador de moneda para Bolivianos
+        const formatter = new Intl.NumberFormat('es-BO', {
+            style: 'currency',
+            currency: 'BOB'
+        });
+
+        async function openDetail(saleId) {
+            console.log("Solicitando detalles al servidor para venta:", saleId);
+
+            // 1. Obtener referencias al DOM del modal
+            const tbody = document.querySelector('#saleDetailModal tbody');
+            const totalSpan = document.querySelector('#saleDetailModal #modalTotalAmount');
+
+            // Validación de seguridad por si el modal cambió
+            if(!tbody) {
+                console.error("Error: No se encontró el cuerpo de la tabla en el modal.");
+                return;
+            }
+
+            // 2. Mostrar estado de carga
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-primary"><div class="spinner-border spinner-border-sm me-2"></div>Cargando datos...</td></tr>';
+            if(totalSpan) totalSpan.textContent = "---";
+
+            // 3. Abrir el modal inmediatamente
+            const modalElement = document.getElementById('saleDetailModal');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+
+            try {
+                // 4. Llamada AJAX al Handler OnGetSaleDetailsAsync de tu Index.cshtml.cs
+                const response = await fetch(`${PAGE_HANDLER_URL}${saleId}`, {
+                    method: 'GET'
+                    // No necesitamos headers de Auth manuales, la cookie viaja sola
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error del Servidor Web: ${response.status}`);
+                }
+
+                const details = await response.json();
+                console.log("Datos recibidos:", details);
+
+                // 5. Renderizar los datos
+                tbody.innerHTML = ''; // Limpiar mensaje de carga
+                let totalAcumulado = 0;
+
+                if (!details || details.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No hay detalles registrados para esta venta.</td></tr>';
+                } else {
+                    details.forEach(d => {
+                        // Manejo de propiedades (Soporta PascalCase y camelCase por seguridad)
+                        const medId = d.MedicineId || d.medicineId || d.medicine_id || 'N/A';
+                        const qty = d.Quantity || d.quantity || 0;
+                        const price = d.UnitPrice || d.unitPrice || d.unit_price || 0;
+                        const amount = d.TotalAmount || d.totalAmount || d.total_amount || 0;
+
+                        totalAcumulado += amount;
+
+                        const row = `
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">ID: ${medId}</span></td>
+                                <td class="text-center">${qty}</td>
+                                <td class="text-end">${formatter.format(price)}</td>
+                                <td class="text-end fw-bold">${formatter.format(amount)}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+
+                // 6. Actualizar el Total en el pie del modal
+                if(totalSpan) {
+                    totalSpan.textContent = formatter.format(totalAcumulado);
+                }
+
+            } catch (error) {
+                console.error("Error cargando detalles:", error);
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> Error al cargar: ${error.message}</td></tr>`;
+            }
         }
 
         function cancelSale(id) {
-            if (!confirm("¿Anular esta venta?")) return;
-            console.log("Cancelar venta", id);
-            // PATCH /api/sales/{id}/cancel
+            if (!confirm("¿Está seguro de que desea ANULAR esta venta? Esta acción no se puede deshacer.")) return;
+
+            console.log("Iniciando anulación de venta:", id);
+            // Aquí implementarías la llamada al handler de cancelación si lo tuvieras
+            // fetch(`?handler=CancelSale&id=${id}`, { method: 'POST' })...
+            alert("Funcionalidad de anulación pendiente de implementación.");
         }
     </script>
 }
