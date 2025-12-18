@@ -28,8 +28,8 @@
                     foreach (var s in Model.Sales)
                     {
                         <tr class="@(s.Status == "CANCELLED" ? "table-secondary" : "")">
-                            <td>@s.Date.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>@s.ClientId</td>
+                            <td>@s.Date.ToString("dd/MM/yyyy")</td>
+                            <td>@s.ClientName</td>
                             <td class="fw-bold">Bs. @s.TotalAmount.ToString("F2")</td>
                             <td>
                                 <span class="badge rounded-pill
@@ -127,25 +127,32 @@
                 if (!details || details.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No hay detalles registrados para esta venta.</td></tr>';
                 } else {
-                    details.forEach(d => {
-                        // Manejo de propiedades (Soporta PascalCase y camelCase por seguridad)
-                        const medId = d.MedicineId || d.medicineId || d.medicine_id || 'N/A';
-                        const qty = d.Quantity || d.quantity || 0;
-                        const price = d.UnitPrice || d.unitPrice || d.unit_price || 0;
-                        const amount = d.TotalAmount || d.totalAmount || d.total_amount || 0;
+                            details.forEach(d => {
+            // 1. Extraer propiedades (Soporta PascalCase, camelCase y snake_case)
+            const medId = d.MedicineId || d.medicineId || d.medicine_id || 'N/A';
 
-                        totalAcumulado += amount;
+            // 2. CORRECCIÓN: Priorizar el nombre del medicamento
+            const medName = d.MedicineName || d.medicineName || `Producto ID: ${medId}`;
 
-                        const row = `
-                            <tr>
-                                <td><span class="badge bg-light text-dark border">ID: ${medId}</span></td>
-                                <td class="text-center">${qty}</td>
-                                <td class="text-end">${formatter.format(price)}</td>
-                                <td class="text-end fw-bold">${formatter.format(amount)}</td>
-                            </tr>
-                        `;
-                        tbody.innerHTML += row;
-                    });
+            const qty = d.Quantity || d.quantity || 0;
+            const price = d.UnitPrice || d.unitPrice || d.unit_price || 0;
+            const amount = d.TotalAmount || d.totalAmount || d.total_amount || 0;
+
+            totalAcumulado += amount;
+
+            // 3. Renderizar fila con el nombre visible y el ID pequeño debajo
+            const row = `
+                    <tr>
+            <td class="text-start">
+                <div class="fw-bold text-dark">${medName}</div>
+            </td>
+            <td class="text-center align-middle">${qty}</td>
+            <td class="text-end align-middle">${formatter.format(price)}</td>
+            <td class="text-end align-middle fw-bold">${formatter.format(amount)}</td>
+        </tr>
+            `;
+            tbody.innerHTML += row;
+        });
                 }
 
                 // 6. Actualizar el Total en el pie del modal

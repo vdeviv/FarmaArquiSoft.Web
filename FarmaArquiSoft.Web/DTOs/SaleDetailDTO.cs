@@ -16,6 +16,9 @@ namespace FarmaArquiSoft.Web.DTOs
         [JsonPropertyName("medicine_id")]
         public int MedicineId_Snake { set { MedicineId = value; } }
 
+        [JsonPropertyName("medicineName")]
+        public string? MedicineName { get; set; }
+
         [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
 
