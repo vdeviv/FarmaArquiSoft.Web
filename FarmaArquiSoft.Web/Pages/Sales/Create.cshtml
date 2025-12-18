@@ -11,6 +11,7 @@
 <form method="post" id="formVenta">
     <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
+    <!-- FECHA / USUARIO -->
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body d-flex justify-content-between bg-light rounded">
             <span><strong>Fecha:</strong> @Model.Fecha.ToString("dd/MM/yyyy")</span>
@@ -18,37 +19,55 @@
         </div>
     </div>
 
+    <!-- CLIENTE -->
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-header bg-success text-white py-2">
-            <h5 class="mb-0 fs-6"><i class="bi bi-person me-2"></i>Datos del Cliente</h5>
+            <h5 class="mb-0 fs-6">
+                <i class="bi bi-person me-2"></i>Datos del Cliente
+            </h5>
         </div>
         <div class="card-body">
             <div class="row g-2 align-items-center">
                 <div class="col-md-4">
                     <label class="form-label small fw-bold">CI / NIT</label>
                     <div class="input-group">
-                        <input asp-for="ClientId" id="txtNit" class="form-control" placeholder="Ingrese CI o NIT" required />
-                        <button type="button" class="btn btn-outline-success" onclick="searchClient()" title="Buscar">
+                        <input asp-for="ClientId" id="txtNit" class="form-control" />
+                        <button type="button" class="btn btn-outline-success" onclick="searchClient()">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
                 </div>
+
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">Nombre del Cliente</label>
-                    <input asp-for="ClientName" id="txtClientName" class="form-control bg-light" placeholder="---" readonly />
+                    <!-- Input visible SOLO para mostrar mensajes -->
+                    <input id="txtClientName"
+                           class="form-control bg-light"
+                           readonly />
+
+                    <!-- Input oculto que sí va al backend -->
+                    <input type="hidden" asp-for="ClientName" />
+
                 </div>
+
                 <div class="col-md-2 d-flex align-items-end">
-                    <a asp-page="/Clients/Create" target="_blank" class="btn btn-success w-100" title="Nuevo cliente">
+                    <button type="button"
+                            class="btn btn-success w-100"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalNuevoCliente">
                         <i class="bi bi-person-plus"></i> Nuevo
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- PRODUCTO -->
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-header bg-success text-white py-2">
-            <h5 class="mb-0 fs-6"><i class="bi bi-capsule me-2"></i>Agregar Producto</h5>
+            <h5 class="mb-0 fs-6">
+                <i class="bi bi-capsule me-2"></i>Agregar Producto
+            </h5>
         </div>
         <div class="card-body">
             <div class="row g-2 align-items-center">
@@ -58,28 +77,30 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <button type="button" class="btn btn-outline-success w-100 fw-bold" onclick="addToCart()">
-                        <i class="bi bi-plus-lg me-2"></i> AGREGAR A LA LISTA
+                    <button type="button"
+                            class="btn btn-outline-success w-100"
+                            onclick="addToCart()">
+                        <i class="bi bi-plus-lg me-2"></i> AGREGAR
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- DETALLE -->
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body p-0">
             <table class="table table-hover mb-0 align-middle">
-                <thead class="table-success text-dark small text-center">
+                <thead class="table-success text-center">
                     <tr>
-                        <th style="width: 120px;">Cantidad</th>
+                        <th>Cantidad</th>
                         <th>Producto</th>
-                        <th style="width: 150px;">P. Unit. (Bs)</th>
-                        <th style="width: 150px;">Subtotal (Bs)</th>
-                        <th style="width: 60px;"></th>
+                        <th>Precio Unitario Bs.</th>
+                        <th>Importe Bs.</th>
+                        <th></th>
                     </tr>
                 </thead>
-                <tbody id="cartBody">
-                </tbody>
+                <tbody id="cartBody"></tbody>
             </table>
 
             <div id="emptyCartMsg" class="text-center py-4 text-muted">
@@ -88,27 +109,94 @@
             </div>
         </div>
 
-        <div class="card-footer bg-white text-end py-3">
-            <h4 class="fw-bold text-success mb-0">Total: Bs. <span id="lblTotal">0.00</span></h4>
+        <div class="card-footer text-end">
+            <h4 class="text-success fw-bold">
+                Total: Bs. <span id="lblTotal">0.00</span>
+            </h4>
         </div>
     </div>
 
     <div id="hiddenInputs"></div>
 
+    <!-- BOTÓN -->
     <div class="text-center mb-5">
-        <button type="submit" class="btn btn-success btn-lg px-5 rounded-pill shadow" onclick="return validateForm()">
+        <button type="button"
+                class="btn btn-success btn-lg px-5 rounded-pill"
+                onclick="openConfirmModal()">
             <i class="bi bi-check-circle-fill me-2"></i> REGISTRAR VENTA
         </button>
     </div>
 </form>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+<!-- ================= MODAL CONFIRMACIÓN ================= -->
+<div class="modal fade" id="confirmVentaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Confirmar Venta</h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="fw-bold">¿Desea registrar la venta?</p>
+                <p>Total: <strong>Bs. <span id="modalTotal"></span></strong></p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        form="formVenta"
+                        class="btn btn-success px-4">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- ================= MODAL NUEVO CLIENTE ================= -->
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Nuevo Cliente</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="mb-2">
+                    <label>Nombre</label>
+                    <input id="newFirst" class="form-control">
+                </div>
+
+                <div class="mb-2">
+                    <label>Apellido</label>
+                    <input id="newLast" class="form-control">
+                </div>
+
+                <div class="mb-2">
+                    <label>CI / NIT</label>
+                    <input id="newNit" class="form-control">
+                </div>
+
+                <div class="mb-2">
+                    <label>Correo electrónico</label>
+                    <input id="newEmail" class="form-control">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarCliente()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
     <script>
-        // ============================================
-        // 1. BUSCADOR DE CLIENTES
-        // ============================================
         async function searchClient() {
             const nitInput = document.getElementById('txtNit');
             const nameInput = document.getElementById('txtClientName');
@@ -124,179 +212,61 @@
 
             try {
                 const response = await fetch(`?handler=SearchClient&query=${query}`);
-                if (!response.ok) throw new Error("Error de red");
+
+                if (!response.ok) {
+                    throw new Error("Respuesta inválida");
+                }
 
                 const data = await response.json();
 
-                if (data.success) {
+                if (data && data.success === true && data.name) {
                     nameInput.value = data.name;
-                    nameInput.className = "form-control bg-success-subtle text-success fw-bold";
-                } else {
-                    nameInput.value = "CLIENTE NO ENCONTRADO";
-                    nameInput.className = "form-control bg-danger-subtle text-danger fw-bold";
+                    nameInput.className =
+                        "form-control bg-success-subtle text-success fw-bold";
                 }
+        
+                else {
+                    nameInput.value = "CLIENTE NO ENCONTRADO";
+                    nameInput.className =
+                        "form-control bg-danger-subtle text-danger fw-bold";
+                }
+
             } catch (error) {
                 console.error(error);
-                nameInput.value = "Error";
+
+               
+                nameInput.value = "CLIENTE NO ENCONTRADO";
+                nameInput.className =
+                    "form-control bg-danger-subtle text-danger fw-bold";
             }
         }
 
-        document.getElementById('txtNit').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchClient();
-            }
-        });
 
-        // ============================================
-        // 2. CARRITO CON PRECIO AUTOMÁTICO
-        // ============================================
         let cart = [];
 
-        async function addToCart() {
-            const sel = document.getElementById('selProduct');
-            const medId = sel.value;
-            const medName = sel.options[sel.selectedIndex].text;
-            const btnAdd = document.querySelector('button[onclick="addToCart()"]');
+        function openConfirmModal() {
+            if (!validateForm()) return;
 
-            if (!medId) {
-                alert("Seleccione un medicamento.");
-                return;
-            }
+            document.getElementById('modalTotal').innerText =
+                document.getElementById('lblTotal').innerText;
 
-            // Evitar duplicados
-            if (cart.find(x => x.medId === medId)) {
-                alert("Este producto ya está en la lista.");
-                return;
-            }
-
-            try {
-                // UI: Desactivar mientras busca
-                sel.disabled = true;
-                btnAdd.disabled = true;
-                btnAdd.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Buscando...';
-
-                // LLAMADA AJAX AL HANDLER PARA OBTENER PRECIO
-                const response = await fetch(`?handler=GetPrice&medId=${medId}`);
-                if (!response.ok) throw new Error("Error obteniendo precio");
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    alert("No hay stock disponible para este producto (No se encontraron lotes activos).");
-                    resetUi();
-                    return;
-                }
-
-                const price = data.price;
-                const stock = data.stock;
-
-                // Agregar al array (Cantidad por defecto = 1)
-                cart.push({
-                    medId: medId,
-                    medName: medName,
-                    quantity: 1,
-                    price: price,
-                    stock: stock
-                });
-
-                resetUi();
-                renderCart();
-
-            } catch (error) {
-                console.error(error);
-                alert("Error al obtener precio.");
-                resetUi();
-            }
-
-            function resetUi() {
-                sel.value = "";
-                sel.disabled = false;
-                btnAdd.disabled = false;
-                btnAdd.innerHTML = '<i class="bi bi-plus-lg me-2"></i> AGREGAR A LA LISTA';
-            }
-        }
-
-        // Función llamada cuando el usuario cambia el número en el input de la tabla
-        function updateQuantity(index, newQty) {
-            newQty = parseInt(newQty);
-            if (isNaN(newQty) || newQty < 1) newQty = 1;
-
-            // Opcional: Validar contra stock máximo
-            // if (newQty > cart[index].stock) {
-            //     alert(`Solo hay ${cart[index].stock} unidades.`);
-            //     newQty = cart[index].stock;
-            // }
-
-            cart[index].quantity = newQty;
-            renderCart(); // Re-dibujar para actualizar subtotales
-        }
-
-        function removeFromCart(index) {
-            cart.splice(index, 1);
-            renderCart();
-        }
-
-        function renderCart() {
-            const tbody = document.getElementById('cartBody');
-            const hiddenDiv = document.getElementById('hiddenInputs');
-            const lblTotal = document.getElementById('lblTotal');
-            const emptyMsg = document.getElementById('emptyCartMsg');
-
-            tbody.innerHTML = "";
-            hiddenDiv.innerHTML = "";
-            let total = 0;
-
-            if (cart.length > 0) emptyMsg.style.display = 'none';
-            else emptyMsg.style.display = 'block';
-
-            cart.forEach((item, index) => {
-                const subtotal = item.quantity * item.price;
-                total += subtotal;
-
-                // 1. Fila con Input Editable
-                const row = `
-                    <tr>
-                        <td class="text-center">
-                            <input type="number" class="form-control form-control-sm text-center fw-bold"
-                                   value="${item.quantity}" min="1"
-                                   onchange="updateQuantity(${index}, this.value)"
-                                   style="max-width: 80px; margin: auto;">
-                        </td>
-                        <td class="text-start">${item.medName}</td>
-                        <td class="text-center">${item.price.toFixed(2)}</td>
-                        <td class="text-center fw-bold">${subtotal.toFixed(2)}</td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-sm text-danger" onclick="removeFromCart(${index})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-
-                // 2. Inputs Ocultos para enviar al Backend
-                hiddenDiv.innerHTML += `
-                    <input type="hidden" name="Items[${index}].MedId" value="${item.medId}" />
-                    <input type="hidden" name="Items[${index}].Quantity" value="${item.quantity}" />
-                    <input type="hidden" name="Items[${index}].Price" value="${item.price}" />
-                `;
-            });
-
-            lblTotal.textContent = total.toFixed(2);
+            new bootstrap.Modal(
+                document.getElementById('confirmVentaModal')
+            ).show();
         }
 
         function validateForm() {
-            const nit = document.getElementById('txtNit').value;
-            if (!nit) {
-                alert("Debe ingresar un cliente.");
+            if (!document.getElementById('txtNit').value) {
+                alert('Debe seleccionar un cliente');
                 return false;
             }
+
             if (cart.length === 0) {
-                alert("Agregue productos a la venta.");
+                alert('Agregue productos');
                 return false;
             }
-            return confirm('¿Confirmar venta?');
+
+            return true;
         }
     </script>
 }
