@@ -95,5 +95,13 @@ namespace FarmaArquiSoft.Web.Services
             ApplyAuthHeaders();
             return await _http.DeleteAsync($"/api/Clients/{id}");
         }
+
+        public async Task<List<ClientDTO>> SearchAsync(string query)
+        {
+            ApplyAuthHeaders();
+            var res = await _http.GetAsync($"/api/Clients/search?query={query}");
+            res.EnsureSuccessStatusCode();
+            return await res.Content.ReadFromJsonAsync<List<ClientDTO>>() ?? new List<ClientDTO>();
+        }
     }
 }
