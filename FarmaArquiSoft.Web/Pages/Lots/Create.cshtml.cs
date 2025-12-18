@@ -1,85 +1,40 @@
-using System.Net;
 using FarmaArquiSoft.Web.DTOs;
 using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FarmaArquiSoft.Web.Pages.Lots
 {
     public class CreateModel : PageModel
     {
         private readonly LotApi _api;
+        private readonly MedicineApi _mApi;
 
-        [BindProperty]
-        public LotDTO Input { get; set; } = new();
+        public CreateModel(LotApi api, MedicineApi mApi) { _api = api; _mApi = mApi; }
 
-        public CreateModel(LotApi api)
+        [BindProperty] public LotDTO Input { get; set; } = new();
+        public List<SelectListItem> MedicineOptions { get; set; } = new();
+
+        public async Task OnGetAsync()
         {
-            _api = api;
+            Input.expiration_date = DateTime.Today.AddMonths(6);
+            await LoadDeps();
         }
 
-        public void OnGet()
-        {
-            // Fecha mínima para evitar fechas "0001-01-01"
-            Input.expiration_date = DateTime.Today;
-        }
-
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid)
-                return Page();
+            if (!ModelState.IsValid) { await LoadDeps(); return Page(); }
+            var res = await _api.CreateAsync(Input);
+            if (res.IsSuccessStatusCode) return RedirectToPage("Index");
+            await LoadDeps();
+            return Page();
+        }
 
-            try
-            {
-                var response = await _api.CreateAsync(Input);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    TempData["SuccessMessage"] = "Lote creado exitosamente.";
-                    return RedirectToPage("Index");
-                }
-
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    var jsonContent = await response.Content.ReadAsStringAsync();
-
-                    // Reutilizamos ApiValidationFacade igual que en Users
-                    ApiValidationFacade.MapValidationErrors(
-                        modelState: ModelState,
-                        jsonContent: jsonContent,
-                        prefix: nameof(Input),
-                        fieldMap: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                        {
-                            ["batch_number"] = "batch_number",
-                            ["expiration_date"] = "expiration_date",
-                            ["quantity"] = "quantity",
-                            ["unit_cost"] = "unit_cost"
-                        },
-                        mailPropertyName: "batch_number",   // no usamos mail, solo para cumplir firma
-                        idPropertyName: "batch_number",
-                        mailKeywords: Array.Empty<string>(),
-                        idKeywords: Array.Empty<string>()
-                    );
-
-                    return Page();
-                }
-
-                ModelState.AddModelError(string.Empty,
-                    $"Error inesperado del API. Código: {(int)response.StatusCode}, Detalle: {response.ReasonPhrase}");
-                return Page();
-            }
-            catch (HttpRequestException ex)
-            {
-                ModelState.AddModelError(string.Empty,
-                    $"Error de conexión con el API de lotes: {ex.Message}");
-                return Page();
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Ocurrió un error inesperado: {ex.Message}");
-                return Page();
-            }
+        private async Task LoadDeps()
+        {
+            var meds = await _mApi.GetAllAsync();
+            MedicineOptions = meds.Select(m => new SelectListItem { Value = m.Id.ToString(), Text = $"{m.Name} ({m.Presentation})" }).ToList();
         }
     }
 }
