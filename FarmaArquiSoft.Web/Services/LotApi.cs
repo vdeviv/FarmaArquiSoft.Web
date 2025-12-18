@@ -94,5 +94,18 @@ namespace FarmaArquiSoft.Web.Services
             ApplyAuthHeaders();
             return _http.DeleteAsync($"api/lots/{id}");
         }
+        public async Task<List<LotDTO>> GetByMedicineAsync(int medicineId)
+        {
+            ApplyAuthHeaders();
+            // Llama al nuevo endpoint que creamos arriba
+            var res = await _http.GetAsync($"api/lots/medicine/{medicineId}");
+
+            if (res.IsSuccessStatusCode)
+            {
+                return await res.Content.ReadFromJsonAsync<List<LotDTO>>() ?? new List<LotDTO>();
+            }
+
+            return new List<LotDTO>();
+        }
     }
 }
