@@ -14,7 +14,7 @@ namespace FarmaArquiSoft.Web.Services
         public SaleApi(IHttpClientFactory factory, IHttpContextAccessor httpContextAccessor)
         {
 
-            _http = factory.CreateClient("SaleApi");
+            _http = factory.CreateClient("SalesApi");
             _httpContextAccessor = httpContextAccessor;
         }
 
