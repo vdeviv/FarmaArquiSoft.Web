@@ -268,5 +268,154 @@
 
             return true;
         }
+
+        // ============================================
+        // 2. LÓGICA DEL CARRITO (RESTAURADA)
+        // ============================================
+
+        // La función openConfirmModal() ya usa la variable 'cart', así que la dejamos global.
+        // Pero necesitamos las funciones para llenarla.
+
+        async function addToCart() {
+            const sel = document.getElementById('selProduct');
+            const medId = sel.value;
+            const medName = sel.options[sel.selectedIndex].text;
+            const btnAdd = document.querySelector('button[onclick="addToCart()"]');
+
+            if (!medId) {
+                alert("Seleccione un medicamento.");
+                return;
+            }
+
+            // Evitar duplicados
+            if (cart.find(x => x.medId === medId)) {
+                alert("Este producto ya está en la lista.");
+                return;
+            }
+
+            try {
+                // UI Feedback: Desactivar mientras busca precio
+                sel.disabled = true;
+                btnAdd.disabled = true;
+                const originalText = btnAdd.innerHTML;
+                btnAdd.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Buscando...';
+
+                // 1. OBTENER PRECIO AUTOMÁTICO DESDE LOTES
+                const response = await fetch(`?handler=GetPrice&medId=${medId}`);
+
+                if (!response.ok) throw new Error("Error de red al obtener precio");
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert("No hay stock disponible para este producto (No se encontraron lotes activos).");
+                    resetUi(originalText);
+                    return;
+                }
+
+                const price = data.price;
+                const stock = data.stock;
+
+                // 2. AGREGAR AL ARRAY (Cantidad 1 por defecto)
+                cart.push({
+                    medId: medId,
+                    medName: medName,
+                    quantity: 1,
+                    price: price,
+                    stock: stock
+                });
+
+                resetUi(originalText);
+                renderCart(); // Dibujar tabla
+
+            } catch (error) {
+                console.error(error);
+                alert("Error al obtener precio del producto.");
+                // resetUi se define abajo, pero en caso de error aquí lo simulamos:
+                sel.disabled = false;
+                btnAdd.disabled = false;
+                btnAdd.innerHTML = '<i class="bi bi-plus-lg me-2"></i> AGREGAR';
+            }
+
+            function resetUi(text) {
+                sel.value = "";
+                sel.disabled = false;
+                btnAdd.disabled = false;
+                btnAdd.innerHTML = text || '<i class="bi bi-plus-lg me-2"></i> AGREGAR';
+            }
+        }
+
+        // Función para actualizar cantidad desde el input de la tabla
+        function updateQuantity(index, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty < 1) newQty = 1;
+
+            // Opcional: Validar stock máximo
+            // if (newQty > cart[index].stock) {
+            //     alert(`Solo hay ${cart[index].stock} unidades disponibles.`);
+            //     newQty = cart[index].stock;
+            // }
+
+            cart[index].quantity = newQty;
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cartBody');
+            const hiddenDiv = document.getElementById('hiddenInputs');
+            const lblTotal = document.getElementById('lblTotal');
+            const emptyMsg = document.getElementById('emptyCartMsg');
+
+            tbody.innerHTML = "";
+            hiddenDiv.innerHTML = "";
+            let total = 0;
+
+            if (cart.length > 0) {
+                if(emptyMsg) emptyMsg.style.display = 'none';
+            } else {
+                if(emptyMsg) emptyMsg.style.display = 'block';
+            }
+
+            cart.forEach((item, index) => {
+                const subtotal = item.quantity * item.price;
+                total += subtotal;
+
+                // 1. Dibujar Fila Visual
+                const row = `
+                    <tr>
+                        <td style="width: 100px;">
+                            <input type="number" class="form-control form-control-sm text-center fw-bold"
+                                   value="${item.quantity}" min="1"
+                                   onchange="updateQuantity(${index}, this.value)"
+                                   onkeyup="updateQuantity(${index}, this.value)"
+                                   style="max-width: 80px; margin: auto;">
+                        </td>
+                        <td class="text-start">${item.medName}</td>
+                        <td class="text-center">${item.price.toFixed(2)}</td>
+                        <td class="text-center fw-bold">${subtotal.toFixed(2)}</td>
+                        <td class="text-center" style="width: 50px;">
+                            <button type="button" class="btn btn-sm text-danger border-0" onclick="removeFromCart(${index})">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+
+                // 2. Generar Inputs Ocultos para enviar al Servidor (Binding)
+                hiddenDiv.innerHTML += `
+                    <input type="hidden" name="Items[${index}].MedId" value="${item.medId}" />
+                    <input type="hidden" name="Items[${index}].Quantity" value="${item.quantity}" />
+                    <input type="hidden" name="Items[${index}].Price" value="${item.price}" />
+                `;
+            });
+
+            if(lblTotal) lblTotal.textContent = total.toFixed(2);
+        }
     </script>
 }
