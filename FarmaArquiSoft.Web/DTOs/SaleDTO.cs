@@ -12,7 +12,6 @@ namespace FarmaArquiSoft.Web.DTOs
         public List<SaleItemPayload> Items { get; set; } = new();
     }
 
-    // DTO para los items (Sirve tanto para la UI temporal como para enviar al API)
     public class SaleItemPayload
     {
         [JsonPropertyName("medId")]
@@ -46,5 +45,7 @@ namespace FarmaArquiSoft.Web.DTOs
 
         [JsonPropertyName("clientId")]
         public string ClientId { get; set; }
+
+        public string? ClientName { get; set; }
     }
 }

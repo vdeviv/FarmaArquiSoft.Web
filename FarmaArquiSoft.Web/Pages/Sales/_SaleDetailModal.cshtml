@@ -1,0 +1,31 @@
+﻿<div class="modal fade" id="saleDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-eye me-2"></i> Detalle de Venta
+                </h5>
+                <button class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <table class="table table-sm text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>P. Unit.</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailBody"></tbody>
+                </table>
+
+                <div class="text-end fw-bold fs-5">
+                    Total: <span id="detailTotal">Bs. 0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
