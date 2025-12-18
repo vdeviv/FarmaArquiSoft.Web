@@ -5,168 +5,298 @@
 }
 
 <h2 class="page-title text-success text-center mb-4">
-    REGISTRO DE VENTA
+    <i class="bi bi-cart-check me-2"></i>REGISTRO DE VENTA
 </h2>
 
-<form method="post">
+<form method="post" id="formVenta">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-    <!-- FECHA Y USUARIO -->
-    <div class="card card-soft mb-3">
-        <div class="card-body d-flex justify-content-between">
-            <span>
-                <strong>Fecha:</strong> @Model.Fecha.ToString("dd/MM/yyyy")
-            </span>
-            <span>
-                <strong>Usuario:</strong> @Model.Usuario
-            </span>
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body d-flex justify-content-between bg-light rounded">
+            <span><strong>Fecha:</strong> @Model.Fecha.ToString("dd/MM/yyyy")</span>
+            <span><strong>Usuario:</strong> @Model.Usuario</span>
         </div>
     </div>
 
-    <!-- ================= CLIENTE ================= -->
-    <div class="card card-soft mb-3">
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-success text-white py-2">
+            <h5 class="mb-0 fs-6"><i class="bi bi-person me-2"></i>Datos del Cliente</h5>
+        </div>
         <div class="card-body">
-            <h5 class="section-title">Cliente</h5>
-
             <div class="row g-2 align-items-center">
-
-                <!-- CI / NIT -->
-                <div class="col-md-5">
-                    <input asp-for="ClientId"
-                           class="form-control input-green"
-                           placeholder="Ingrese CI o NIT" />
-                </div>
-
-                <!-- BUSCAR CLIENTE -->
-                <div class="col-md-1 text-center">
-                    <a asp-page="/Client/Index"
-                       class="btn btn-outline-success"
-                       title="Buscar cliente">
-                        <i class="bi bi-search"></i>
-                    </a>
-                </div>
-
-                <!-- NOMBRE CLIENTE -->
                 <div class="col-md-4">
-                    <input asp-for="ClientName"
-                           class="form-control input-green"
-                           placeholder="Cliente seleccionado"
-                           readonly />
+                    <label class="form-label small fw-bold">CI / NIT</label>
+                    <div class="input-group">
+                        <input asp-for="ClientId" id="txtNit" class="form-control" placeholder="Ingrese CI o NIT" required />
+                        <button type="button" class="btn btn-outline-success" onclick="searchClient()" title="Buscar">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
                 </div>
-
-                <!-- NUEVO CLIENTE -->
-                <div class="col-md-2">
-                    <a asp-page="/Client/Create"
-                       class="btn btn-success w-100"
-                       title="Nuevo cliente">
-                        <i class="bi bi-plus-lg"></i>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Nombre del Cliente</label>
+                    <input asp-for="ClientName" id="txtClientName" class="form-control bg-light" placeholder="---" readonly />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <a asp-page="/Clients/Create" target="_blank" class="btn btn-success w-100" title="Nuevo cliente">
+                        <i class="bi bi-person-plus"></i> Nuevo
                     </a>
                 </div>
-
             </div>
         </div>
     </div>
 
-    <!-- ================= PRODUCTO ================= -->
-    <div class="card card-soft mb-3">
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-success text-white py-2">
+            <h5 class="mb-0 fs-6"><i class="bi bi-capsule me-2"></i>Agregar Producto</h5>
+        </div>
         <div class="card-body">
-            <h5 class="section-title">Producto a Agregar</h5>
-
             <div class="row g-2 align-items-center">
-
-                <!-- BUSCADOR PRODUCTO -->
-                <div class="col-md-8">
-                    <input class="form-control input-green"
-                           placeholder="Buscar medicamento"
-                           disabled />
+                <div class="col-md-9">
+                    <select id="selProduct" class="form-select" asp-items="Model.MedicineOptions">
+                        <option value="">-- Seleccione Medicamento --</option>
+                    </select>
                 </div>
-
-                <!-- BUSCAR MEDICAMENTO -->
-                <div class="col-md-1 text-center">
-                    <a asp-page="/Medicine/Index"
-                       class="btn btn-outline-success"
-                       title="Buscar medicamento">
-                        <i class="bi bi-search"></i>
-                    </a>
-                </div>
-
-                <!-- AGREGAR (AÚN NO ACTIVO) -->
                 <div class="col-md-3">
-                    <button type="button"
-                            class="btn btn-success w-100"
-                            disabled>
-                        <i class="bi bi-plus-lg"></i>
+                    <button type="button" class="btn btn-outline-success w-100 fw-bold" onclick="addToCart()">
+                        <i class="bi bi-plus-lg me-2"></i> AGREGAR A LA LISTA
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
 
-    <!-- ================= DETALLE ================= -->
-    <div class="card card-soft mb-3">
-        <div class="card-body">
-            <h5 class="section-title">Detalle de Venta</h5>
-
-            <table class="table table-bordered table-soft align-middle">
-                <thead>
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-success text-dark small text-center">
                     <tr>
-                        <th style="width:120px">Cantidad</th>
-                        <th>Descripción</th>
-                        <th style="width:160px">Precio Unitario Bs.</th>
-                        <th style="width:140px">Importe Bs.</th>
-                        <th style="width:100px">Opción</th>
+                        <th style="width: 120px;">Cantidad</th>
+                        <th>Producto</th>
+                        <th style="width: 150px;">P. Unit. (Bs)</th>
+                        <th style="width: 150px;">Subtotal (Bs)</th>
+                        <th style="width: 60px;"></th>
                     </tr>
                 </thead>
-                <tbody>
-                    @if (!Model.Items.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">
-                                No se agregaron productos a la venta
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var item in Model.Items)
-                        {
-                            <tr>
-                                <td>@item.Quantity</td>
-                                <td>@item.MedName</td>
-                                <td>@item.Price</td>
-                                <td>@item.SubTotal</td>
-                                <td class="text-center">
-                                    <button asp-page-handler="RemoveItem"
-                                            asp-route-medId="@item.MedId"
-                                            class="btn btn-outline-danger btn-sm"
-                                            title="Quitar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    }
+                <tbody id="cartBody">
                 </tbody>
             </table>
+
+            <div id="emptyCartMsg" class="text-center py-4 text-muted">
+                <i class="bi bi-basket3 display-6 d-block mb-2"></i>
+                No hay productos en la venta
+            </div>
+        </div>
+
+        <div class="card-footer bg-white text-end py-3">
+            <h4 class="fw-bold text-success mb-0">Total: Bs. <span id="lblTotal">0.00</span></h4>
         </div>
     </div>
 
-    <!-- ================= TOTAL ================= -->
-    <div class="card card-soft mb-3">
-        <div class="card-body text-end">
-            <h4 class="text-success">
-                Total Bs.: <strong>@Model.Total</strong>
-            </h4>
-        </div>
-    </div>
+    <div id="hiddenInputs"></div>
 
-    <!-- ================= GUARDAR ================= -->
-    <div class="text-center mb-4">
-        <button type="submit"
-                class="btn btn-success px-5"
-                onclick="return confirm('¿Desea registrar la venta?')">
-            Guardar
+    <div class="text-center mb-5">
+        <button type="submit" class="btn btn-success btn-lg px-5 rounded-pill shadow" onclick="return validateForm()">
+            <i class="bi bi-check-circle-fill me-2"></i> REGISTRAR VENTA
         </button>
     </div>
-
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // ============================================
+        // 1. BUSCADOR DE CLIENTES
+        // ============================================
+        async function searchClient() {
+            const nitInput = document.getElementById('txtNit');
+            const nameInput = document.getElementById('txtClientName');
+            const query = nitInput.value.trim();
+
+            if (!query) {
+                alert("Ingrese CI o NIT.");
+                return;
+            }
+
+            nameInput.value = "Buscando...";
+            nameInput.className = "form-control bg-light text-muted";
+
+            try {
+                const response = await fetch(`?handler=SearchClient&query=${query}`);
+                if (!response.ok) throw new Error("Error de red");
+
+                const data = await response.json();
+
+                if (data.success) {
+                    nameInput.value = data.name;
+                    nameInput.className = "form-control bg-success-subtle text-success fw-bold";
+                } else {
+                    nameInput.value = "CLIENTE NO ENCONTRADO";
+                    nameInput.className = "form-control bg-danger-subtle text-danger fw-bold";
+                }
+            } catch (error) {
+                console.error(error);
+                nameInput.value = "Error";
+            }
+        }
+
+        document.getElementById('txtNit').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchClient();
+            }
+        });
+
+        // ============================================
+        // 2. CARRITO CON PRECIO AUTOMÁTICO
+        // ============================================
+        let cart = [];
+
+        async function addToCart() {
+            const sel = document.getElementById('selProduct');
+            const medId = sel.value;
+            const medName = sel.options[sel.selectedIndex].text;
+            const btnAdd = document.querySelector('button[onclick="addToCart()"]');
+
+            if (!medId) {
+                alert("Seleccione un medicamento.");
+                return;
+            }
+
+            // Evitar duplicados
+            if (cart.find(x => x.medId === medId)) {
+                alert("Este producto ya está en la lista.");
+                return;
+            }
+
+            try {
+                // UI: Desactivar mientras busca
+                sel.disabled = true;
+                btnAdd.disabled = true;
+                btnAdd.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Buscando...';
+
+                // LLAMADA AJAX AL HANDLER PARA OBTENER PRECIO
+                const response = await fetch(`?handler=GetPrice&medId=${medId}`);
+                if (!response.ok) throw new Error("Error obteniendo precio");
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert("No hay stock disponible para este producto (No se encontraron lotes activos).");
+                    resetUi();
+                    return;
+                }
+
+                const price = data.price;
+                const stock = data.stock;
+
+                // Agregar al array (Cantidad por defecto = 1)
+                cart.push({
+                    medId: medId,
+                    medName: medName,
+                    quantity: 1,
+                    price: price,
+                    stock: stock
+                });
+
+                resetUi();
+                renderCart();
+
+            } catch (error) {
+                console.error(error);
+                alert("Error al obtener precio.");
+                resetUi();
+            }
+
+            function resetUi() {
+                sel.value = "";
+                sel.disabled = false;
+                btnAdd.disabled = false;
+                btnAdd.innerHTML = '<i class="bi bi-plus-lg me-2"></i> AGREGAR A LA LISTA';
+            }
+        }
+
+        // Función llamada cuando el usuario cambia el número en el input de la tabla
+        function updateQuantity(index, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty < 1) newQty = 1;
+
+            // Opcional: Validar contra stock máximo
+            // if (newQty > cart[index].stock) {
+            //     alert(`Solo hay ${cart[index].stock} unidades.`);
+            //     newQty = cart[index].stock;
+            // }
+
+            cart[index].quantity = newQty;
+            renderCart(); // Re-dibujar para actualizar subtotales
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cartBody');
+            const hiddenDiv = document.getElementById('hiddenInputs');
+            const lblTotal = document.getElementById('lblTotal');
+            const emptyMsg = document.getElementById('emptyCartMsg');
+
+            tbody.innerHTML = "";
+            hiddenDiv.innerHTML = "";
+            let total = 0;
+
+            if (cart.length > 0) emptyMsg.style.display = 'none';
+            else emptyMsg.style.display = 'block';
+
+            cart.forEach((item, index) => {
+                const subtotal = item.quantity * item.price;
+                total += subtotal;
+
+                // 1. Fila con Input Editable
+                const row = `
+                    <tr>
+                        <td class="text-center">
+                            <input type="number" class="form-control form-control-sm text-center fw-bold"
+                                   value="${item.quantity}" min="1"
+                                   onchange="updateQuantity(${index}, this.value)"
+                                   style="max-width: 80px; margin: auto;">
+                        </td>
+                        <td class="text-start">${item.medName}</td>
+                        <td class="text-center">${item.price.toFixed(2)}</td>
+                        <td class="text-center fw-bold">${subtotal.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm text-danger" onclick="removeFromCart(${index})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+
+                // 2. Inputs Ocultos para enviar al Backend
+                hiddenDiv.innerHTML += `
+                    <input type="hidden" name="Items[${index}].MedId" value="${item.medId}" />
+                    <input type="hidden" name="Items[${index}].Quantity" value="${item.quantity}" />
+                    <input type="hidden" name="Items[${index}].Price" value="${item.price}" />
+                `;
+            });
+
+            lblTotal.textContent = total.toFixed(2);
+        }
+
+        function validateForm() {
+            const nit = document.getElementById('txtNit').value;
+            if (!nit) {
+                alert("Debe ingresar un cliente.");
+                return false;
+            }
+            if (cart.length === 0) {
+                alert("Agregue productos a la venta.");
+                return false;
+            }
+            return confirm('¿Confirmar venta?');
+        }
+    </script>
+}

@@ -1,25 +1,33 @@
 using FarmaArquiSoft.Web.DTOs;
+using FarmaArquiSoft.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FarmaArquiSoft.Web.Pages.Sales
 {
     public class CreateModel : PageModel
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly SaleApi _saleApi;
+        private readonly MedicineApi _medicineApi;
+        private readonly ClientApi _clientApi;
+        private readonly LotApi _lotApi; // <--- NUEVO: Para sacar el precio
 
-        public CreateModel(IHttpClientFactory httpClientFactory)
+        public CreateModel(
+            SaleApi saleApi,
+            MedicineApi medicineApi,
+            ClientApi clientApi,
+            LotApi lotApi)
         {
-            _httpClientFactory = httpClientFactory;
+            _saleApi = saleApi;
+            _medicineApi = medicineApi;
+            _clientApi = clientApi;
+            _lotApi = lotApi;
         }
 
-        // ================= DATOS AUTOMÁTICOS =================
+        // ================= DATOS DE CABECERA =================
         public DateTime Fecha => DateTime.Now;
-        public string Usuario => User.Identity?.Name ?? "usuario";
+        public string Usuario => User.Identity?.Name ?? "Admin";
 
         // ================= CLIENTE =================
         [BindProperty]
@@ -28,68 +36,143 @@ namespace FarmaArquiSoft.Web.Pages.Sales
         [BindProperty]
         public string ClientName { get; set; } = string.Empty;
 
-        // ================= DETALLE TEMPORAL =================
+        // ================= PRODUCTOS =================
+        public List<SelectListItem> MedicineOptions { get; set; } = new();
+
         [BindProperty]
-        public List<SaleItemTempDTO> Items { get; set; } = new();
+        public List<SaleItemPayload> Items { get; set; } = new();
 
-        public decimal Total => Items.Sum(i => i.SubTotal);
+        public decimal Total => Items.Sum(i => i.Price * i.Quantity);
 
-        public void OnGet()
+        // ================= HANDLERS =================
+
+        public async Task OnGetAsync()
         {
-            // UI solamente
+            await LoadMedicines();
         }
 
-        // ================= POST REAL AL SALE API =================
+        // 🔍 HANDLER 1: BUSCAR CLIENTE
+        public async Task<IActionResult> OnGetSearchClientAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return new JsonResult(new { success = false });
+
+            try
+            {
+                var clients = await _clientApi.SearchAsync(query);
+                var client = clients.FirstOrDefault(c => c.nit == query);
+
+                if (client != null)
+                {
+                    return new JsonResult(new
+                    {
+                        success = true,
+                        name = $"{client.first_name} {client.last_name}"
+                    });
+                }
+                return new JsonResult(new { success = false });
+            }
+            catch
+            {
+                return new JsonResult(new { success = false });
+            }
+        }
+
+        // 💰 HANDLER 2: OBTENER PRECIO DEL LOTE (NUEVO)
+        public async Task<IActionResult> OnGetGetPriceAsync(int medId)
+        {
+            try
+            {
+                // Buscamos los lotes de ese medicamento
+                var lots = await _lotApi.GetByMedicineAsync(medId);
+
+                // Filtramos: Que tenga stock (> 0) y no esté eliminado
+                // (Asumimos que el backend ya los ordena por vencimiento)
+                var activeLot = lots.FirstOrDefault(l => l.quantity > 0 && !l.is_deleted);
+
+                if (activeLot != null)
+                {
+                    return new JsonResult(new
+                    {
+                        success = true,
+                        price = activeLot.unit_cost,
+                        stock = activeLot.quantity
+                    });
+                }
+                else
+                {
+                    return new JsonResult(new
+                    {
+                        success = false,
+                        message = "Sin stock disponible"
+                    });
+                }
+            }
+            catch
+            {
+                return new JsonResult(new { success = false, message = "Error al consultar precio" });
+            }
+        }
+
         public async Task<IActionResult> OnPostAsync()
         {
-            if (string.IsNullOrEmpty(ClientId) || !Items.Any())
+            if (string.IsNullOrEmpty(ClientId))
             {
-                ModelState.AddModelError(string.Empty,
-                    "Debe seleccionar un cliente y al menos un producto.");
+                ModelState.AddModelError(string.Empty, "Debe ingresar un CI/NIT de cliente.");
+                await LoadMedicines();
                 return Page();
             }
 
-            var request = new CreateSaleRequestDto
+            if (Items == null || !Items.Any())
+            {
+                ModelState.AddModelError(string.Empty, "Debe agregar al menos un producto.");
+                await LoadMedicines();
+                return Page();
+            }
+
+            var saleRequest = new CreateSaleRequest
             {
                 ClientId = ClientId,
-                Items = Items.Select(i => new SaleItemDto
-                {
-                    MedId = i.MedId,
-                    Quantity = i.Quantity,
-                    Price = i.Price
-                }).ToList()
+                Items = Items
             };
 
-            var client = _httpClientFactory.CreateClient("SaleApi");
-
-            // JWT
-            var token = Request.Cookies["access_token"];
-            if (!string.IsNullOrEmpty(token))
+            try
             {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
+                var response = await _saleApi.CreateSaleAsync(saleRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Venta registrada exitosamente.";
+                    return RedirectToPage("/Lots/Index");
+                }
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                ModelState.AddModelError(string.Empty, $"Error al registrar: {response.ReasonPhrase}");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Error de conexión: {ex.Message}");
             }
 
-            var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync("api/sales", content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                ModelState.AddModelError(string.Empty,
-                    "Error al registrar la venta en el microservicio.");
-                return Page();
-            }
-
-            return RedirectToPage("/Index");
+            await LoadMedicines();
+            return Page();
         }
 
-        // ================= QUITAR ITEM =================
-        public IActionResult OnPostRemoveItem(string medId)
+        private async Task LoadMedicines()
         {
-            Items.RemoveAll(i => i.MedId == medId);
-            return Page();
+            try
+            {
+                var meds = await _medicineApi.GetAllAsync();
+                MedicineOptions = meds.Where(m => !m.IsDeleted).Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = $"{m.Name} ({m.Presentation})"
+                }).OrderBy(t => t.Text).ToList();
+            }
+            catch
+            {
+                MedicineOptions = new List<SelectListItem>();
+            }
         }
     }
 }
